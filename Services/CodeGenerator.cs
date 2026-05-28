@@ -197,14 +197,17 @@ public class CodeGenerator
         {
             var lastProp = typeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>().LastOrDefault();
             int insertPosition = typeDecl.OpenBraceToken.Span.End;
+            string indentation = "    ";
             if (lastProp != null)
             {
                 insertPosition = lastProp.FullSpan.End;
+                indentation = lastProp.GetLeadingTrivia().ToString().Trim('\r', '\n');
+                if (string.IsNullOrEmpty(indentation)) indentation = "        ";
             }
             
             string propertyCode = isInterface
-                ? $"\n    DbSet<{entity.EntityName}> {entity.EntityNamePlural} {{ get; }}"
-                : $"\n    public DbSet<{entity.EntityName}> {entity.EntityNamePlural} => Set<{entity.EntityName}>();";
+                ? $"\n{indentation}DbSet<{entity.EntityName}> {entity.EntityNamePlural} {{ get; }}"
+                : $"\n{indentation}public DbSet<{entity.EntityName}> {entity.EntityNamePlural} => Set<{entity.EntityName}>();";
                 
             newSource = newSource.Insert(insertPosition, propertyCode);
         }
