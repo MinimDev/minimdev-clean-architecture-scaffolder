@@ -188,24 +188,62 @@ public class CodeGenerator
             
         if (typeDecl == null) return (false, $"Type declaration not found in {fileName}");
         
-        bool exists = typeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>()
+        bool propertyExists = typeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>()
             .Any(p => p.Identifier.Text == entity.EntityNamePlural);
             
-        if (exists) return (true, "Property already exists (skipped)");
-        
-        var lastProp = typeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>().LastOrDefault();
-        int insertPosition = typeDecl.OpenBraceToken.Span.End;
-        if (lastProp != null)
+        string newSource = sourceCode;
+
+        if (!propertyExists)
         {
-            insertPosition = lastProp.FullSpan.End;
-        }
-        
-        string propertyCode = isInterface
-            ? $"\n    DbSet<{entity.EntityName}> {entity.EntityNamePlural} {{ get; }}"
-            : $"\n    public DbSet<{entity.EntityName}> {entity.EntityNamePlural} => Set<{entity.EntityName}>();";
+            var lastProp = typeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>().LastOrDefault();
+            int insertPosition = typeDecl.OpenBraceToken.Span.End;
+            if (lastProp != null)
+            {
+                insertPosition = lastProp.FullSpan.End;
+            }
             
-        string newSource = sourceCode.Insert(insertPosition, propertyCode);
-        await File.WriteAllTextAsync(filePath, newSource);
-        return (true, null);
+            string propertyCode = isInterface
+                ? $"\n    DbSet<{entity.EntityName}> {entity.EntityNamePlural} {{ get; }}"
+                : $"\n    public DbSet<{entity.EntityName}> {entity.EntityNamePlural} => Set<{entity.EntityName}>();";
+                
+            newSource = newSource.Insert(insertPosition, propertyCode);
+        }
+
+        if (!isInterface && entity.UseBaseEntity)
+        {
+            var newTree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(newSource);
+            var newRoot = await newTree.GetRootAsync();
+            var newTypeDecl = newRoot.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax>()
+                .FirstOrDefault(t => t.Identifier.Text == "ApplicationDbContext");
+
+            if (newTypeDecl != null)
+            {
+                var onModelCreating = newTypeDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.Text == "OnModelCreating");
+
+                if (onModelCreating != null && onModelCreating.Body != null)
+                {
+                    string filterCode = $"modelBuilder.Entity<{entity.EntityName}>().HasQueryFilter(p => !p.IsDeleted);";
+                    if (!onModelCreating.Body.ToFullString().Contains(filterCode))
+                    {
+                        var baseCall = onModelCreating.Body.Statements.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionStatementSyntax>()
+                            .FirstOrDefault(s => s.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax inv && 
+                                                 inv.Expression.ToString() == "base.OnModelCreating(modelBuilder)");
+
+                        int filterInsertPos = baseCall != null ? baseCall.FullSpan.Start : onModelCreating.Body.CloseBraceToken.Span.Start;
+                        
+                        newSource = newSource.Insert(filterInsertPos, $"        {filterCode}\n");
+                    }
+                }
+            }
+        }
+
+        if (newSource != sourceCode)
+        {
+            await File.WriteAllTextAsync(filePath, newSource);
+            return (true, null);
+        }
+
+        return (true, "Already exists (skipped)");
     }
 }
