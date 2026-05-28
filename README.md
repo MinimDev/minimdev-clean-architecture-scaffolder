@@ -29,6 +29,15 @@ This tool dramatically reduces development time by scaffolding Domain Entities, 
 - **Syntax Parsing:** Roslyn (Microsoft.CodeAnalysis.CSharp)
 - **Target Architecture:** Clean Architecture, CQRS, MediatR, EF Core
 
+## ⚠️ Prerequisites
+
+Since ArchStudio is built as a Desktop App using .NET MAUI Blazor Hybrid, you **must** have the .NET MAUI workload installed on your machine to build and run the source code.
+
+Run the following command to install the required MAUI workloads:
+```bash
+dotnet workload install maui
+```
+
 ## 📦 Getting Started
 
 1. **Clone the repository:**
