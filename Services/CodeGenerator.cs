@@ -230,9 +230,10 @@ public class CodeGenerator
                             .FirstOrDefault(s => s.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax inv && 
                                                  inv.Expression.ToString() == "base.OnModelCreating");
 
+                        string indentation = baseCall != null ? baseCall.GetLeadingTrivia().ToString() : "        ";
                         int filterInsertPos = baseCall != null ? baseCall.FullSpan.Start : onModelCreating.Body.CloseBraceToken.Span.Start;
                         
-                        newSource = newSource.Insert(filterInsertPos, $"        {filterCode}\n");
+                        newSource = newSource.Insert(filterInsertPos, $"{indentation}{filterCode}\n");
                     }
                 }
             }
