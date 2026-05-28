@@ -228,7 +228,7 @@ public class CodeGenerator
                     {
                         var baseCall = onModelCreating.Body.Statements.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionStatementSyntax>()
                             .FirstOrDefault(s => s.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax inv && 
-                                                 inv.Expression.ToString() == "base.OnModelCreating(modelBuilder)");
+                                                 inv.Expression.ToString() == "base.OnModelCreating");
 
                         int filterInsertPos = baseCall != null ? baseCall.FullSpan.Start : onModelCreating.Body.CloseBraceToken.Span.Start;
                         
