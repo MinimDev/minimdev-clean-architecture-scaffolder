@@ -1,0 +1,135 @@
+@using ArchStudio.Models
+@using ArchStudio.Services
+@inject AppState State
+@inject FileManager FileManager
+@inject WindowsFolderPicker FolderPicker
+@inject EntityParserService EntityParser
+@implements IDisposable
+
+<nav class="sidebar">
+    <!-- Workspace -->
+    <div class="sidebar-section">Workspace</div>
+    <div class="workspace-box" @onclick="PickWorkspaceAsync" title="Click to select project folder">
+        @if (string.IsNullOrEmpty(State.WorkspacePath))
+        {
+            <div class="workspace-name" style="color:var(--text-muted)">No workspace selected</div>
+            <div class="workspace-path">Click to open a project folder</div>
+        }
+        else
+        {
+            <div class="workspace-name">@State.RootNamespace</div>
+            <div class="workspace-path">@State.WorkspacePath</div>
+            @if (_isScanning)
+            {
+                <div style="font-size:10px;color:var(--accent-cyan);margin-top:2px;">Scanning entities...</div>
+            }
+        }
+    </div>
+
+    <!-- Entity List -->
+    <div class="sidebar-section" style="margin-top:4px">Entities (@State.Entities.Count)</div>
+    <div class="entity-list">
+        @foreach (var entity in State.Entities)
+        {
+            <div class="entity-item @(State.ActiveEntity == entity ? "active" : "")"
+                 @onclick="() => State.SetActiveEntity(entity)">
+                <div>
+                    <div class="entity-name">
+                        @(string.IsNullOrWhiteSpace(entity.EntityName) ? "(unnamed)" : entity.EntityName)
+                    </div>
+                    <div class="entity-props">@entity.Properties.Count props</div>
+                </div>
+                <button class="entity-delete-btn"
+                        @onclick:stopPropagation="true"
+                        @onclick="() => State.RemoveEntity(entity)"
+                        title="Remove entity">✕</button>
+            </div>
+        }
+        @if (!State.Entities.Any())
+        {
+            <div style="padding:20px 10px;color:var(--text-muted);font-size:11px;text-align:center;line-height:1.7">
+                No entities yet.<br/>Click below to add one.
+            </div>
+        }
+    </div>
+
+    <!-- Add Button -->
+    <button class="sidebar-add-btn" @onclick="State.AddEntity">
+        <span style="font-size:16px;line-height:1">＋</span>
+        <span>New Entity</span>
+    </button>
+</nav>
+
+@code {
+    private bool _isScanning = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        State.OnStateChanged += StateHasChanged;
+        
+        // Auto-load last workspace if available
+        var lastWorkspace = Microsoft.Maui.Storage.Preferences.Default.Get("LastWorkspace", string.Empty);
+        if (!string.IsNullOrEmpty(lastWorkspace) && System.IO.Directory.Exists(lastWorkspace))
+        {
+            await LoadWorkspaceAsync(lastWorkspace);
+        }
+    }
+
+    private async Task PickWorkspaceAsync()
+    {
+        try
+        {
+            var folderPath = await FolderPicker.PickFolderAsync();
+            if (!string.IsNullOrEmpty(folderPath))
+            {
+                await LoadWorkspaceAsync(folderPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Folder picker error: {ex.Message}");
+            _isScanning = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadWorkspaceAsync(string folderPath)
+    {
+        try
+        {
+            _isScanning = true;
+            StateHasChanged();
+
+            var ns = await FileManager.DetectRootNamespaceAsync(folderPath);
+            State.SetWorkspace(folderPath, ns);
+            Microsoft.Maui.Storage.Preferences.Default.Set("LastWorkspace", folderPath);
+
+            // Load existing entities
+            var fileContents = await FileManager.GetEntityFilesAsync(folderPath, ns);
+            var existingEntities = new List<EntityModel>();
+            
+            foreach (var content in fileContents)
+            {
+                var parsed = EntityParser.ParseEntity(content);
+                if (parsed != null && !string.IsNullOrWhiteSpace(parsed.EntityName) && parsed.EntityName != "Entity")
+                {
+                    existingEntities.Add(parsed);
+                }
+            }
+
+            State.LoadExistingEntities(existingEntities);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading workspace: {ex.Message}");
+        }
+        finally
+        {
+            _isScanning = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+        => State.OnStateChanged -= StateHasChanged;
+}

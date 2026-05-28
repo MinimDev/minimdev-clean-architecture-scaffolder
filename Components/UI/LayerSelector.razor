@@ -1,0 +1,227 @@
+@using ArchStudio.Models
+@using ArchStudio.Services
+@inject AppState State
+@inject CodeGenerator Generator
+@inject FileManager FileManager
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="layer-selector">
+    <!-- Layer Checkboxes -->
+    <div class="panel-section" style="overflow-y:auto;flex:1;min-height:0">
+        <div class="panel-section-title">Generate Layers</div>
+
+        <div class="layer-group">
+            <div class="layer-group-title">🏛 Domain</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-entity" @bind="_opts.GenerateDomainEntity" />
+                <label for="chk-entity">Entity class</label>
+                <span class="layer-file">Domain/Entities/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-errors" @bind="_opts.GenerateDomainErrors" />
+                <label for="chk-errors">Domain Errors</label>
+                <span class="layer-file">Domain/Errors/</span>
+            </div>
+        </div>
+
+        <div class="layer-group" style="margin-top:8px">
+            <div class="layer-group-title">⚙️ Application (CQRS)</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-irepo" @bind="_opts.GenerateDomainRepository" />
+                <label for="chk-irepo">IRepository Interface</label>
+                <span class="layer-file">Common/Interfaces/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-cmd-create" @bind="_opts.GenerateCreateCommand" />
+                <label for="chk-cmd-create">Create Command</label>
+                <span class="layer-file">Commands/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-cmd-update" @bind="_opts.GenerateUpdateCommand" />
+                <label for="chk-cmd-update">Update Command</label>
+                <span class="layer-file">Commands/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-cmd-delete" @bind="_opts.GenerateDeleteCommand" />
+                <label for="chk-cmd-delete">Delete Command</label>
+                <span class="layer-file">Commands/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-qry-getall" @bind="_opts.GenerateGetAllQuery" />
+                <label for="chk-qry-getall">GetAll Query</label>
+                <span class="layer-file">Queries/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-qry-getbyid" @bind="_opts.GenerateGetByIdQuery" />
+                <label for="chk-qry-getbyid">GetById Query</label>
+                <span class="layer-file">Queries/</span>
+            </div>
+        </div>
+
+        <div class="layer-group" style="margin-top:8px">
+            <div class="layer-group-title">💾 Persistence</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-efcfg" @bind="_opts.GeneratePersistenceConfig" />
+                <label for="chk-efcfg">EF Configuration</label>
+                <span class="layer-file">Configurations/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-repo" @bind="_opts.GeneratePersistenceRepository" />
+                <label for="chk-repo">Repository Impl</label>
+                <span class="layer-file">Repositories/</span>
+            </div>
+        </div>
+
+        <div class="layer-group" style="margin-top:8px">
+            <div class="layer-group-title">🌐 WebAPI</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-ctrl" @bind="_opts.GenerateController" />
+                <label for="chk-ctrl">REST Controller</label>
+                <span class="layer-file">Controllers/</span>
+            </div>
+            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateController ? "1" : "0.5")">
+                <input type="checkbox" id="chk-auth" @bind="_opts.RequireAuthorization" disabled="@(!_opts.GenerateController)" />
+                <label for="chk-auth">Require [Authorize]</label>
+                <span class="layer-file">Security</span>
+            </div>
+        </div>
+        <div class="layer-group" style="margin-top:8px">
+            <div class="layer-group-title">🛠 Post-Scaffold Actions</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-injectdb" @bind="_opts.InjectDbContext" />
+                <label for="chk-injectdb">Inject DbSet&lt;T&gt;</label>
+                <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scaffold Button -->
+    <button class="scaffold-btn"
+            @onclick="RequestScaffold"
+            disabled="@(_isRunning || State.ActiveEntity is null
+                       || string.IsNullOrWhiteSpace(State.ActiveEntity.EntityName)
+                       || string.IsNullOrEmpty(State.WorkspacePath)
+                       || !State.ActiveEntity.Properties.Any())">
+        @if (_isRunning)
+        {
+            <span>⏳ Running...</span>
+        }
+        else
+        {
+            <span>⚡ Run Scaffold</span>
+        }
+    </button>
+
+    <!-- Terminal Log -->
+    <div style="padding:8px 14px 4px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">
+            Terminal Log
+        </span>
+        @if (_logs.Any())
+        {
+            <button @onclick="() => _logs.Clear()"
+                    style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:10px;font-family:var(--font-ui)">
+                clear
+            </button>
+        }
+    </div>
+
+    <div class="terminal-wrap">
+        <div class="terminal-body">
+            @if (!_logs.Any())
+            {
+                <div class="log-line log-info">
+                    <span class="log-icon">📋</span>
+                    <span class="log-path">Ready. Configure an entity and click Scaffold.</span>
+                </div>
+            }
+            @foreach (var log in _logs)
+            {
+                <div class="log-line @log.CssClass">
+                    <span class="log-icon">@log.Icon</span>
+                    <span class="log-path">@log.Message</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Scaffold Confirmation Modal -->
+@if (_showConfirmModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span style="font-size:20px">✨</span> Confirm Scaffold
+            </div>
+            <div class="modal-body">
+                Are you sure you want to generate code for the entity <strong style="color:var(--accent-bright)">@State.ActiveEntity?.EntityName</strong>?
+                <br/><br/>
+                This action will instantly create and overwrite files based on your selected layers and properties.
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" @onclick="CancelScaffold">Cancel</button>
+                <button class="btn-confirm" @onclick="ConfirmScaffoldAsync">Yes, Scaffold it!</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private ScaffoldOptions _opts = new();
+    private bool _isRunning = false;
+    private bool _showConfirmModal = false;
+    private List<LogEntry> _logs = new();
+
+    protected override void OnInitialized()
+        => State.OnStateChanged += StateHasChanged;
+
+    private void RequestScaffold()
+    {
+        if (State.ActiveEntity is null || string.IsNullOrEmpty(State.WorkspacePath)) return;
+        _showConfirmModal = true;
+    }
+
+    private void CancelScaffold()
+    {
+        _showConfirmModal = false;
+    }
+
+    private async Task ConfirmScaffoldAsync()
+    {
+        _showConfirmModal = false;
+        
+        if (State.ActiveEntity is null || string.IsNullOrEmpty(State.WorkspacePath)) return;
+
+        _isRunning = true;
+        _logs.Add(new("▶", $"Scaffolding '{State.ActiveEntity.EntityName}'...", "log-info"));
+        StateHasChanged();
+
+        await foreach (var result in Generator.ScaffoldAsync(
+            State.WorkspacePath,
+            State.RootNamespace ?? "MyProject",
+            State.ActiveEntity,
+            _opts))
+        {
+            if (result.Success)
+                _logs.Add(new("✓", result.RelativePath, "log-success"));
+            else if (result.Error?.Contains("skipped") == true)
+                _logs.Add(new("⚠", $"{result.RelativePath} — {result.Error}", "log-skip"));
+            else
+                _logs.Add(new("✗", $"{result.RelativePath} — {result.Error}", "log-error"));
+
+            StateHasChanged();
+            await Task.Delay(40); // smooth streaming effect
+        }
+
+        _logs.Add(new("✅", "Done!", "log-success"));
+        _isRunning = false;
+        StateHasChanged();
+    }
+
+    private record LogEntry(string Icon, string Message, string CssClass);
+
+    public void Dispose()
+        => State.OnStateChanged -= StateHasChanged;
+}

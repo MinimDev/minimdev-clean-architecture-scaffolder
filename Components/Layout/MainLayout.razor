@@ -1,0 +1,29 @@
+@inherits LayoutComponentBase
+@inject AppState State
+
+<div class="app-shell">
+    <!-- ── Header ── -->
+    <header class="app-header">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>MinimDevArchStudio</span>
+        </div>
+        @if (!string.IsNullOrEmpty(State.RootNamespace))
+        {
+            <span class="header-badge">📦 @State.RootNamespace</span>
+        }
+        <div class="header-spacer"></div>
+        <span class="header-badge">.NET Clean Architecture</span>
+    </header>
+
+    <!-- ── Sidebar ── -->
+    <Sidebar />
+
+    <!-- ── Main Canvas ── -->
+    <main style="overflow:hidden;display:flex;flex-direction:column;">
+        @Body
+    </main>
+
+    <!-- ── Right Panel ── -->
+    <LayerSelector />
+</div>

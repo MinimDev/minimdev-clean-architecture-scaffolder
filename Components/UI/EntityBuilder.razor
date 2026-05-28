@@ -1,0 +1,200 @@
+@using ArchStudio.Models
+@using ArchStudio.Services
+@inject AppState State
+@implements IDisposable
+
+<div class="entity-builder">
+    @if (State.ActiveEntity is null)
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">⚡</div>
+            <div class="empty-state-title">No entity selected</div>
+            <div class="empty-state-sub">Create or select an entity from the sidebar<br/>to start building</div>
+        </div>
+    }
+    else
+    {
+        var e = State.ActiveEntity;
+
+        <div class="builder-header">
+            <div class="builder-title">
+                @(string.IsNullOrWhiteSpace(e.EntityName) ? "New Entity" : e.EntityName)
+            </div>
+        </div>
+
+        <div class="builder-body">
+            <!-- Config -->
+            <div class="config-grid">
+                <div class="form-group">
+                    <label class="form-label">Entity Name</label>
+                    <input class="form-input"
+                           placeholder="e.g. Product"
+                           value="@e.EntityName"
+                           @oninput="ev => { e.EntityName = ev.Value?.ToString() ?? string.Empty; State.NotifyStateChanged(); }" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Table Name</label>
+                    <input class="form-input"
+                           placeholder="@(string.IsNullOrWhiteSpace(e.EntityName) ? "auto" : e.EntityNamePlural)"
+                           @bind="e.TableName" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DB Schema</label>
+                    <input class="form-input"
+                           placeholder="dbo"
+                           @bind="e.DbSchema" />
+                </div>
+
+                <!-- Base Entity Config -->
+                <div class="form-group" style="grid-column: 1 / -1; background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" @bind="e.UseBaseEntity" />
+                        <span style="font-weight:600; font-size:13px;">Inherit from Base Entity</span>
+                    </label>
+                    @if (e.UseBaseEntity)
+                    {
+                        <div style="display:flex; gap: 12px; margin-top: 10px;">
+                            <div style="flex:1;">
+                                <label class="form-label" style="font-size:11px;">Base Class Name</label>
+                                <input class="form-input" @bind="e.BaseClassName" placeholder="e.g. BaseAuditableEntity" />
+                            </div>
+                            <div style="flex:1;">
+                                <label class="form-label" style="font-size:11px;">Base Namespace</label>
+                                <input class="form-input" @bind="e.BaseClassNamespace" placeholder="e.g. Domain.Common" />
+                            </div>
+                        </div>
+                    }
+                    <div style="margin-top: 10px;">
+                        <label class="form-label" style="font-size:11px;">Interfaces (comma separated)</label>
+                        <input class="form-input" @bind="e.Interfaces" placeholder="e.g. ISoftDeletable, IAuditable" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Derived Tokens -->
+            @if (!string.IsNullOrWhiteSpace(e.EntityName))
+            {
+                <div class="tokens-row">
+                    <div class="token-chip">
+                        <span class="token-key">{{ "{{" }} EntityName }}</span>
+                        <span class="token-val">@e.EntityName</span>
+                    </div>
+                    <div class="token-chip">
+                        <span class="token-key">{{ "{{" }} Plural }}</span>
+                        <span class="token-val">@e.EntityNamePlural</span>
+                    </div>
+                    <div class="token-chip">
+                        <span class="token-key">{{ "{{" }} camelCase }}</span>
+                        <span class="token-val">@e.EntityNameCamelCase</span>
+                    </div>
+                    <div class="token-chip">
+                        <span class="token-key">{{ "{{" }} Namespace }}</span>
+                        <span class="token-val">@(State.RootNamespace ?? "?")</span>
+                    </div>
+                </div>
+            }
+
+            <!-- Property Table -->
+            <div class="section-label">Properties</div>
+            <div class="prop-table-wrap">
+                <table class="prop-table">
+                    <thead>
+                        <tr>
+                            <th style="width:180px">Property Name</th>
+                            <th style="width:130px">Data Type</th>
+                            <th style="width:62px;text-align:center">Nullable</th>
+                            <th style="width:42px;text-align:center">PK</th>
+                            <th style="width:62px;text-align:center" title="Public Setter (get; set;)">PubSet</th>
+                            <th style="width:100px;text-align:center">Size/Prec</th>
+                            <th style="width:38px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!e.Properties.Any())
+                        {
+                            <tr class="empty-row">
+                                <td colspan="7">No properties — click "Add Property" below</td>
+                            </tr>
+                        }
+                        @foreach (var prop in e.Properties)
+                        {
+                            <tr class="prop-row-enter" @key="prop.Id">
+                                <td>
+                                    <input class="td-input"
+                                           placeholder="e.g. Name"
+                                           @bind="prop.Name"
+                                           @bind:event="oninput" />
+                                </td>
+                                <td>
+                                    <input type="text" list="dataTypes-@prop.Id" class="td-input" @bind="prop.DataType" />
+                                    <datalist id="dataTypes-@prop.Id">
+                                        @foreach (var t in PropertyModel.SupportedTypes)
+                                        {
+                                            <option value="@t">@t</option>
+                                        }
+                                    </datalist>
+                                </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox" class="prop-checkbox" @bind="prop.IsNullable" />
+                                </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox" class="prop-checkbox" @bind="prop.IsPrimaryKey" />
+                                </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox" class="prop-checkbox" @bind="prop.HasPublicSetter" title="Check for { get; set; }, uncheck for { get; private set; }" />
+                                </td>
+                                <td>
+                                    @if (prop.DataType == "string")
+                                    {
+                                        <input class="td-input" type="number" placeholder="∞" @bind="prop.MaxLength" title="Max Length" />
+                                    }
+                                    else if (prop.DataType == "decimal" || prop.DataType == "double" || prop.DataType == "float")
+                                    {
+                                        <div style="display:flex;gap:2px">
+                                            <input class="td-input" type="number" placeholder="18" @bind="prop.Precision" style="width:50%;padding:4px" title="Precision" />
+                                            <input class="td-input" type="number" placeholder="2" @bind="prop.Scale" style="width:50%;padding:4px" title="Scale" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--text-muted);padding-left:4px;font-size:12px">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn-icon-delete"
+                                            @onclick="() => DeleteProperty(e, prop)"
+                                            title="Remove">✕</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="add-prop-row">
+                    <button class="btn-add-prop" @onclick="() => AddProperty(e)">
+                        ＋ Add Property
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+        => State.OnStateChanged += StateHasChanged;
+
+    private void AddProperty(EntityModel entity)
+    {
+        entity.Properties.Add(new PropertyModel());
+        State.NotifyStateChanged();
+    }
+
+    private void DeleteProperty(EntityModel entity, PropertyModel prop)
+    {
+        entity.Properties.Remove(prop);
+        State.NotifyStateChanged();
+    }
+
+    public void Dispose()
+        => State.OnStateChanged -= StateHasChanged;
+}
