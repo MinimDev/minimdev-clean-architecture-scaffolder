@@ -1,0 +1,40 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Application.Common.Models;
+using {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
+using {{ root_namespace }}.Domain.Entities;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.Get{{ entity_name }}ById;
+
+public class Get{{ entity_name }}ByIdQueryHandler : IRequestHandler<Get{{ entity_name }}ByIdQuery, Result<{{ entity_name }}Dto>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public Get{{ entity_name }}ByIdQueryHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<Result<{{ entity_name }}Dto>> Handle(Get{{ entity_name }}ByIdQuery request, CancellationToken cancellationToken)
+    {
+        var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
+        
+        if ({{ entity_name_camel }} == null)
+            return Result<{{ entity_name }}Dto>.Failure("{{ entity_name }} not found");
+
+        var dto = new {{ entity_name }}Dto
+        {
+{{~ if use_base_entity ~}}
+            Id = {{ entity_name_camel }}.Id,
+{{~ end ~}}
+{{~ for prop in dto_properties ~}}
+            {{ prop.name }} = {{ entity_name_camel }}.{{ prop.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+
+        return Result<{{ entity_name }}Dto>.Success(dto);
+    }
+}

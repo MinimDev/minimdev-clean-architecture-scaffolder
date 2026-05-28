@@ -1,0 +1,10 @@
+namespace {{ root_namespace }}.Domain.Errors;
+
+public static class {{ entity_name }}Errors
+{
+    public const string NotFound = "The {{ entity_name }} with the specified ID was not found.";
+    
+    public const string AlreadyExists = "A {{ entity_name }} with the same identifier already exists.";
+    
+    public const string InvalidData = "The provided {{ entity_name }} data is invalid.";
+}

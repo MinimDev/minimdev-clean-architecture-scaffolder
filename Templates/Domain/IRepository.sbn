@@ -1,0 +1,12 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Domain.Entities;
+
+namespace {{ root_namespace }}.Application.Common.Interfaces;
+
+public interface I{{ entity_name }}Repository : IRepository<{{ entity_name }}>
+{
+    // Tambahkan method kustom spesifik untuk {{ entity_name }} di sini
+}

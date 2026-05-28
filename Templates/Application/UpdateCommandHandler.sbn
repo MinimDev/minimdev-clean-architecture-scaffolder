@@ -1,0 +1,50 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Application.Common.Models;
+using {{ root_namespace }}.Domain.Entities;
+using {{ root_namespace }}.Domain.Exceptions;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Update{{ entity_name }};
+
+public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ entity_name }}Command, Result<Unit>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public Update{{ entity_name }}CommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<Result<Unit>> Handle(Update{{ entity_name }}Command request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
+            if ({{ entity_name_camel }} == null)
+                return Result<Unit>.Failure("{{ entity_name }} not found");
+
+            {{ entity_name_camel }}.Update({{- for prop in dto_properties -}}
+                request.{{ prop.name }}{{ if !for.last }}, {{ end }}
+                {{- end -}}
+            );
+
+            _unitOfWork.Repository<{{ entity_name }}>().Update({{ entity_name_camel }});
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (DomainException ex)
+        {
+            return Result<Unit>.Failure(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Result<Unit>.Failure($"An error occurred while updating the {{ entity_name | string.downcase }}: {ex.Message}");
+        }
+    }
+}
+
+

@@ -1,0 +1,19 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Models;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Create{{ entity_name }};
+
+/// <summary>
+///     Command untuk membuat {{ entity_name | string.downcase }} baru
+/// </summary>
+public record Create{{ entity_name }}Command : IRequest<Result<Guid>>
+{
+{{~ for prop in properties ~}}
+    {{~ if prop.is_auditable_property; continue; end ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+{{~ end ~}}
+}
+

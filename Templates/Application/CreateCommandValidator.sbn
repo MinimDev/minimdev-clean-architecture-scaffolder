@@ -1,0 +1,32 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using FluentValidation;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Create{{ entity_name }};
+
+/// <summary>
+/// Validator untuk Create{{ entity_name }}Command
+/// </summary>
+public class Create{{ entity_name }}CommandValidator : AbstractValidator<Create{{ entity_name }}Command>
+{
+    public Create{{ entity_name }}CommandValidator()
+    {
+{{~ for prop in properties ~}}
+        {{~ if !prop.is_nullable && prop.data_type == "string" ~}}
+        RuleFor(x => x.{{ prop.name }})
+            .NotEmpty().WithMessage("{{ prop.name }} is required")
+            {{~ if prop.max_length ~}}
+            .MaximumLength({{ prop.max_length }}).WithMessage("{{ prop.name }} must not exceed {{ prop.max_length }} characters")
+            {{~ end ~}};
+        {{~ else if !prop.is_nullable && (prop.data_type == "int" || prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float" || prop.data_type == "long") ~}}
+        RuleFor(x => x.{{ prop.name }})
+            .GreaterThanOrEqualTo(0).WithMessage("{{ prop.name }} must be greater than or equal to 0");
+        {{~ else if prop.data_type == "string" && prop.max_length ~}}
+        RuleFor(x => x.{{ prop.name }})
+            .MaximumLength({{ prop.max_length }}).WithMessage("{{ prop.name }} must not exceed {{ prop.max_length }} characters");
+        {{~ end ~}}
+
+{{~ end ~}}
+    }
+}

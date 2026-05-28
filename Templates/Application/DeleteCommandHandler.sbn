@@ -1,0 +1,35 @@
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Application.Common.Models;
+using {{ root_namespace }}.Domain.Entities;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Delete{{ entity_name }};
+
+public class Delete{{ entity_name }}CommandHandler : IRequestHandler<Delete{{ entity_name }}Command, Result<Unit>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public Delete{{ entity_name }}CommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<Result<Unit>> Handle(Delete{{ entity_name }}Command request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
+            if ({{ entity_name_camel }} == null)
+                return Result<Unit>.Failure("{{ entity_name }} not found");
+
+            _unitOfWork.Repository<{{ entity_name }}>().Delete({{ entity_name_camel }});
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (Exception ex)
+        {
+            return Result<Unit>.Failure($"An error occurred while deleting the {{ entity_name | string.downcase }}: {ex.Message}");
+        }
+    }
+}

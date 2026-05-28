@@ -1,0 +1,49 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Application.Common.Models;
+using {{ root_namespace }}.Domain.Entities;
+using {{ root_namespace }}.Domain.Exceptions;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Create{{ entity_name }};
+
+/// <summary>
+/// Handler untuk Create{{ entity_name }}Command
+/// </summary>
+public class Create{{ entity_name }}CommandHandler : IRequestHandler<Create{{ entity_name }}Command, Result<Guid>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public Create{{ entity_name }}CommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<Result<Guid>> Handle(Create{{ entity_name }}Command request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var {{ entity_name_camel }} = {{ entity_name }}.Create({{- for prop in dto_properties -}}
+                request.{{ prop.name }}{{ if !for.last }}, {{ end }}
+                {{- end -}}
+            );
+
+            _unitOfWork.Repository<{{ entity_name }}>().Add({{ entity_name_camel }});
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result<Guid>.Success({{ entity_name_camel }}.Id);
+        }
+        catch (DomainException ex)
+        {
+            return Result<Guid>.Failure(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Result<Guid>.Failure($"An error occurred while creating the {{ entity_name | string.downcase }}: {ex.Message}");
+        }
+    }
+}
+
+

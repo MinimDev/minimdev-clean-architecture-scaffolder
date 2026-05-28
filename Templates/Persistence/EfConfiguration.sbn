@@ -1,0 +1,30 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace {{ root_namespace }}.Infrastructure.Persistence.Configurations;
+
+public sealed class {{ entity_name }}Configuration : IEntityTypeConfiguration<{{ entity_name }}>
+{
+    public void Configure(EntityTypeBuilder<{{ entity_name }}> builder)
+    {
+        builder.ToTable("{{ table_name }}", "{{ db_schema }}");
+
+        builder.HasKey(x => x.Id);
+
+{{~ for prop in properties ~}}
+    {{~ modifiers = "" ~}}
+    {{~ if !prop.is_nullable; modifiers = modifiers + "\n            .IsRequired()"; end ~}}
+    {{~ if prop.data_type == "string" && prop.max_length; modifiers = modifiers + "\n            .HasMaxLength(" + prop.max_length + ")"; end ~}}
+    {{~ if (prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float") && prop.precision;
+          scale_part = prop.scale != null ? ", " + prop.scale : "";
+          modifiers = modifiers + "\n            .HasPrecision(" + prop.precision + scale_part + ")";
+        end ~}}
+        builder.Property(x => x.{{ prop.name }}){{ modifiers }};
+
+{{~ end ~}}
+    }
+}

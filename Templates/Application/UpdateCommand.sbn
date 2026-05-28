@@ -1,0 +1,18 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Models;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Update{{ entity_name }};
+
+public record Update{{ entity_name }}Command({{ if use_base_entity }}Guid Id{{ end }}) : IRequest<Result<Unit>>
+{
+{{~ for prop in properties ~}}
+    {{~ if prop.is_auditable_property; continue; end ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+{{~ end ~}}
+}
+
+
+

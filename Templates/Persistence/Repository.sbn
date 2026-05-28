@@ -1,0 +1,18 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Domain.Entities;
+using {{ root_namespace }}.Application.Common.Interfaces;
+// Pastikan menggunakan namespace yang benar untuk ApplicationDbContext dan Repository<T>
+using {{ root_namespace }}.Infrastructure.Persistence;
+
+namespace {{ root_namespace }}.Infrastructure.Persistence.Repositories;
+
+internal sealed class {{ entity_name }}Repository : Repository<{{ entity_name }}>, I{{ entity_name }}Repository
+{
+    public {{ entity_name }}Repository(ApplicationDbContext context) : base(context)
+    {
+    }
+
+    // Tambahkan implementasi method kustom spesifik untuk {{ entity_name }} di sini
+}

@@ -1,0 +1,29 @@
+using {{ root_namespace }}.Application.Common.Models;
+using MediatR;
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
+
+/// <summary>
+///     Query untuk mendapatkan list {{ entity_name_plural | string.downcase }}
+/// </summary>
+public record GetAll{{ entity_name_plural }}Query : IRequest<Result<PaginatedList<{{ entity_name }}Dto>>>
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+}
+
+/// <summary>
+///     DTO untuk {{ entity_name }}
+/// </summary>
+public class {{ entity_name }}Dto
+{
+{{~ if use_base_entity ~}}
+    public Guid Id { get; set; }
+{{~ end ~}}
+{{~ for prop in dto_properties ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; set; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+{{~ end ~}}
+}

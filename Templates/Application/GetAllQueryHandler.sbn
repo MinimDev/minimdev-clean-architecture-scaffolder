@@ -1,0 +1,46 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+using {{ root_namespace }}.Application.Common.Interfaces;
+using {{ root_namespace }}.Application.Common.Models;
+using {{ root_namespace }}.Domain.Entities;
+using Mapster;
+using MediatR;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
+
+/// <summary>
+/// Handler untuk GetAll{{ entity_name_plural }}Query
+/// </summary>
+public class GetAll{{ entity_name_plural }}QueryHandler : IRequestHandler<GetAll{{ entity_name_plural }}Query, Result<PaginatedList<{{ entity_name }}Dto>>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public GetAll{{ entity_name_plural }}QueryHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<Result<PaginatedList<{{ entity_name }}Dto>>> Handle(GetAll{{ entity_name_plural }}Query request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var {{ entity_name_camel }}s = await _unitOfWork.Repository<{{ entity_name }}>().GetAllAsync(cancellationToken);
+            
+            var totalCount = {{ entity_name_camel }}s.Count;
+            var pagedEntities = {{ entity_name_camel }}s
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            var response = pagedEntities.Adapt<List<{{ entity_name }}Dto>>();
+            var paginatedList = new PaginatedList<{{ entity_name }}Dto>(response, totalCount, request.PageNumber, request.PageSize);
+            
+            return Result<PaginatedList<{{ entity_name }}Dto>>.Success(paginatedList);
+        }
+        catch (Exception ex)
+        {
+            return Result<PaginatedList<{{ entity_name }}Dto>>.Failure($"An error occurred while retrieving {{ entity_name_plural | string.downcase }}: {ex.Message}");
+        }
+    }
+}

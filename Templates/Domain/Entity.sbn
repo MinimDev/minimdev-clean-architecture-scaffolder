@@ -1,0 +1,71 @@
+{{~ if has_custom_types ~}}
+using {{ root_namespace }}.Domain.Enums;
+{{~ end ~}}
+{{ for u in usings }}
+using {{ u }};
+{{ end }}
+{{ if (usings | array.size) == 0 && use_base_entity }}
+using {{ root_namespace }}.{{ base_class_namespace }};
+{{ end }}
+
+namespace {{ root_namespace }}.Domain.Entities;
+
+{{~ inheritance = "" ~}}
+{{~ if use_base_entity && base_class_name != "" ~}}
+{{~ inheritance = base_class_name ~}}
+{{~ end ~}}
+{{~ if interfaces != "" ~}}
+  {{~ if inheritance != "" ~}}
+    {{~ inheritance = inheritance + ", " + interfaces ~}}
+  {{~ else ~}}
+    {{~ inheritance = interfaces ~}}
+  {{~ end ~}}
+{{~ end ~}}
+
+public sealed class {{ entity_name }}{{ if inheritance != "" }} : {{ inheritance }}{{ end }}
+{
+{{~ for prop in properties ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; {{ if prop.has_public_setter }}set;{{ else }}private set;{{ end }} }
+{{~ end ~}}
+
+{{~ if string.contains interfaces "ISoftDeletable" ~}}
+    {{~ has_is_deleted = false; has_deleted_at = false; has_deleted_by = false ~}}
+    {{~ for prop in properties ~}}
+        {{~ if prop.name == "IsDeleted" }}{{ has_is_deleted = true }}{{ end ~}}
+        {{~ if prop.name == "DeletedAt" }}{{ has_deleted_at = true }}{{ end ~}}
+        {{~ if prop.name == "DeletedBy" }}{{ has_deleted_by = true }}{{ end ~}}
+    {{~ end ~}}
+    {{~ if !has_is_deleted || !has_deleted_at || !has_deleted_by }}
+    // ISoftDeletable implementation
+    {{~ if !has_is_deleted }}
+    public bool IsDeleted { get; set; }
+    {{~ end ~}}
+    {{~ if !has_deleted_at }}
+    public DateTime? DeletedAt { get; set; }
+    {{~ end ~}}
+    {{~ if !has_deleted_by }}
+    public string? DeletedBy { get; set; }
+    {{~ end ~}}
+    {{~ end ~}}
+{{~ end }}
+
+    private {{ entity_name }}({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }})
+    {
+{{~ for prop in dto_properties ~}}
+        {{ prop.name }} = {{ prop.name | string.downcase }};
+{{~ end ~}}
+    }
+
+    public static {{ entity_name }} Create({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }})
+    {
+        return new {{ entity_name }}({{ for prop in dto_properties }}{{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }});
+    }
+
+    public void Update({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }}, {{ end }}{{ end }})
+    {
+{{~ for prop in dto_properties ~}}
+        {{ prop.name }} = {{ prop.name | string.downcase }};
+{{~ end ~}}
+    }
+}
+
