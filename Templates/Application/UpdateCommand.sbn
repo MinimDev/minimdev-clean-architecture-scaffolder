@@ -8,8 +8,7 @@ namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Com
 
 public record Update{{ entity_name }}Command({{ if use_base_entity }}Guid Id{{ end }}) : IRequest<Result<Unit>>
 {
-{{~ for prop in properties ~}}
-    {{~ if prop.is_auditable_property; continue; end ~}}
+{{~ for prop in dto_properties ~}}
     public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
 {{~ end ~}}
 }

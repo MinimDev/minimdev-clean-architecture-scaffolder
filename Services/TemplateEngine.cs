@@ -33,6 +33,9 @@ public class TemplateEngine
         scriptObject.Add("db_schema", entity.DbSchema);
         scriptObject.Add("properties", entity.Properties);
         scriptObject.Add("dto_properties", entity.DtoProperties);
+        scriptObject.Add("entity_properties", entity.EntityProperties);
+        scriptObject.Add("fk_properties", entity.FkProperties);
+        scriptObject.Add("collection_fk_properties", entity.CollectionFkProperties);
 
         // Options Support
         scriptObject.Add("require_authorization", options.RequireAuthorization);

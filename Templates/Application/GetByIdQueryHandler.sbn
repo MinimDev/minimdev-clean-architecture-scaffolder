@@ -30,8 +30,12 @@ public class Get{{ entity_name }}ByIdQueryHandler : IRequestHandler<Get{{ entity
 {{~ if use_base_entity ~}}
             Id = {{ entity_name_camel }}.Id,
 {{~ end ~}}
-{{~ for prop in dto_properties ~}}
-            {{ prop.name }} = {{ entity_name_camel }}.{{ prop.name }}{{ if !for.last }},{{ end }}
+{{~ for prop in entity_properties ~}}
+            {{ prop.name }} = {{ entity_name_camel }}.{{ prop.name }}{{ if !for.last || (collection_fk_properties | array.size) > 0 }},{{ end }}
+{{~ end ~}}
+{{~ if (collection_fk_properties | array.size) > 0 ~}}
+            // TODO: Map collection FK properties
+            // {{ for prop in collection_fk_properties }}{{ prop.name }} = {{ entity_name_camel }}.[CollectionProperty].Select(x => x.Id).ToList(){{ if !for.last }},{{ end }}{{ end }}
 {{~ end ~}}
         };
 

@@ -25,7 +25,18 @@ namespace {{ root_namespace }}.Domain.Entities;
 public sealed class {{ entity_name }}{{ if inheritance != "" }} : {{ inheritance }}{{ end }}
 {
 {{~ for prop in properties ~}}
-    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; {{ if prop.has_public_setter }}set;{{ else }}private set;{{ end }} }
+    {{~ init = "" ~}}
+    {{~ if prop.is_navigation_property ~}}
+        {{~ is_col = (prop.data_type | string.starts_with "ICollection<") || (prop.data_type | string.starts_with "IList<") || (prop.data_type | string.starts_with "List<") || (prop.data_type | string.starts_with "IEnumerable<") ~}}
+        {{~ if is_col ~}}
+            {{~ t_type = prop.data_type | string.remove "ICollection<" | string.remove "IList<" | string.remove "List<" | string.remove "IEnumerable<" | string.remove ">" ~}}
+            {{~ init = " = new List<" + t_type + ">();" ~}}
+        {{~ end ~}}
+    {{~ end ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable && !prop.is_navigation_property }}?{{ end }} {{ prop.name }} { get; {{ if prop.has_public_setter }}set;{{ else }}private set;{{ end }} }{{ init }}
+{{~ end ~}}
+{{~ for prop in fk_properties ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; private set; }
 {{~ end ~}}
 
 {{~ if string.contains interfaces "ISoftDeletable" ~}}
@@ -49,23 +60,22 @@ public sealed class {{ entity_name }}{{ if inheritance != "" }} : {{ inheritance
     {{~ end ~}}
 {{~ end }}
 
-    private {{ entity_name }}({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }})
+    private {{ entity_name }}({{ for prop in entity_properties }}{{ prop.data_type }}{{ if prop.is_nullable && !prop.is_navigation_property }}?{{ end }} {{ prop.name_camel_case }}{{ if !for.last }},{{ end }}{{ end }})
     {
-{{~ for prop in dto_properties ~}}
-        {{ prop.name }} = {{ prop.name | string.downcase }};
+{{~ for prop in entity_properties ~}}
+        {{ prop.name }} = {{ prop.name_camel_case }};
 {{~ end ~}}
     }
 
-    public static {{ entity_name }} Create({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }})
+    public static {{ entity_name }} Create({{ for prop in entity_properties }}{{ prop.data_type }}{{ if prop.is_nullable && !prop.is_navigation_property }}?{{ end }} {{ prop.name_camel_case }}{{ if !for.last }},{{ end }}{{ end }})
     {
-        return new {{ entity_name }}({{ for prop in dto_properties }}{{ prop.name | string.downcase }}{{ if !for.last }},{{ end }}{{ end }});
+        return new {{ entity_name }}({{ for prop in entity_properties }}{{ prop.name_camel_case }}{{ if !for.last }},{{ end }}{{ end }});
     }
 
-    public void Update({{ for prop in dto_properties }}{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name | string.downcase }}{{ if !for.last }}, {{ end }}{{ end }})
+    public void Update({{ for prop in entity_properties }}{{ prop.data_type }}{{ if prop.is_nullable && !prop.is_navigation_property }}?{{ end }} {{ prop.name_camel_case }}{{ if !for.last }}, {{ end }}{{ end }})
     {
-{{~ for prop in dto_properties ~}}
-        {{ prop.name }} = {{ prop.name | string.downcase }};
+{{~ for prop in entity_properties ~}}
+        {{ prop.name }} = {{ prop.name_camel_case }};
 {{~ end ~}}
     }
 }
-

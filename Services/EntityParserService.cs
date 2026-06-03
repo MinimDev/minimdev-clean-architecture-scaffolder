@@ -17,11 +17,33 @@ public class EntityParserService
             var classDeclaration = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
             if (classDeclaration == null) return null;
 
+            string tableName = string.Empty;
+            string dbSchema = "dbo";
+
+            var tableAttr = classDeclaration.AttributeLists
+                .SelectMany(a => a.Attributes)
+                .FirstOrDefault(a => a.Name.ToString() == "Table" || a.Name.ToString() == "TableAttribute");
+            
+            if (tableAttr != null && tableAttr.ArgumentList != null && tableAttr.ArgumentList.Arguments.Count > 0)
+            {
+                var firstArg = tableAttr.ArgumentList.Arguments[0].Expression;
+                if (firstArg is LiteralExpressionSyntax literal)
+                {
+                    tableName = literal.Token.ValueText;
+                }
+                
+                var schemaArg = tableAttr.ArgumentList.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.Text == "Schema");
+                if (schemaArg != null && schemaArg.Expression is LiteralExpressionSyntax schemaLiteral)
+                {
+                    dbSchema = schemaLiteral.Token.ValueText;
+                }
+            }
+
             var entity = new EntityModel
             {
                 EntityName = classDeclaration.Identifier.Text,
-                TableName = string.Empty,
-                DbSchema = "dbo"
+                TableName = tableName,
+                DbSchema = dbSchema
             };
             entity.SyncTableName();
 
@@ -105,10 +127,21 @@ public class EntityParserService
                     _ => propertyModel.DataType
                 };
 
-                // Jika properti tidak didukung secara default (misal Enum custom seperti ProductStatus), 
-                // kita tambahkan secara dinamis ke SupportedTypes agar muncul di dropdown UI.
-                if (!PropertyModel.SupportedTypes.Contains(propertyModel.DataType))
+                if (propertyModel.DataType.StartsWith("ICollection<") || propertyModel.DataType.StartsWith("IList<") || propertyModel.DataType.StartsWith("List<") || propertyModel.DataType.StartsWith("IEnumerable<"))
                 {
+                    propertyModel.IsNavigationProperty = true;
+                    propertyModel.RelationshipType = "OneToMany";
+                }
+                else if (!PropertyModel.SupportedTypes.Contains(propertyModel.DataType))
+                {
+                    // Jika bukan tipe standar yang didukung, bisa jadi enum atau relasi ManyToOne/OneToOne.
+                    // Secara default kita biarkan user menyesuaikan via UI nanti, tapi kita tandai jika bentuknya PascalCase.
+                    if (!string.IsNullOrEmpty(propertyModel.DataType) && char.IsUpper(propertyModel.DataType[0]))
+                    {
+                        // Anggap sebagai relasi ManyToOne by default (bisa diubah di UI)
+                        propertyModel.IsNavigationProperty = true;
+                        propertyModel.RelationshipType = "ManyToOne";
+                    }
                     PropertyModel.SupportedTypes.Add(propertyModel.DataType);
                 }
 

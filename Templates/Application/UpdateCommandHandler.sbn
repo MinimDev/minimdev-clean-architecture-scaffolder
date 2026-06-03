@@ -26,10 +26,15 @@ public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ en
             if ({{ entity_name_camel }} == null)
                 return Result<Unit>.Failure("{{ entity_name }} not found");
 
-            {{ entity_name_camel }}.Update({{- for prop in dto_properties -}}
+            {{ entity_name_camel }}.Update({{- for prop in entity_properties -}}
                 request.{{ prop.name }}{{ if !for.last }}, {{ end }}
                 {{- end -}}
             );
+
+            {{~ if (collection_fk_properties | array.size) > 0 ~}}
+            // TODO: Process collection relations here if necessary. 
+            // e.g. mapping {{ for prop in collection_fk_properties }}request.{{ prop.name }}{{ if !for.last }}, {{ end }}{{ end }} to {{ entity_name_camel }}
+            {{~ end ~}}
 
             _unitOfWork.Repository<{{ entity_name }}>().Update({{ entity_name_camel }});
             await _unitOfWork.SaveChangesAsync(cancellationToken);

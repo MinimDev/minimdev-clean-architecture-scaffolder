@@ -11,8 +11,7 @@ namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Com
 /// </summary>
 public record Create{{ entity_name }}Command : IRequest<Result<Guid>>
 {
-{{~ for prop in properties ~}}
-    {{~ if prop.is_auditable_property; continue; end ~}}
+{{~ for prop in dto_properties ~}}
     public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
 {{~ end ~}}
 }
