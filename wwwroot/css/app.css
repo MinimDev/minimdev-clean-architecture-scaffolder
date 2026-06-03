@@ -5,26 +5,26 @@
 
 /* ── Variables ─────────────── */
 :root {
-  --bg-primary:    #0d0d12;
-  --bg-secondary:  #13131c;
-  --bg-surface:    #1a1a27;
-  --bg-elevated:   #22223a;
-  --bg-hover:      #252538;
+  --bg-primary:    #f8fafc;
+  --bg-secondary:  #f1f5f9;
+  --bg-surface:    #ffffff;
+  --bg-elevated:   #e2e8f0;
+  --bg-hover:      #e2e8f0;
 
-  --accent-primary: #6366f1;
-  --accent-bright:  #818cf8;
-  --accent-glow:    rgba(99,102,241,.25);
-  --accent-green:   #22c55e;
-  --accent-red:     #ef4444;
-  --accent-yellow:  #eab308;
-  --accent-cyan:    #06b6d4;
+  --accent-primary: #4f46e5;
+  --accent-bright:  #6366f1;
+  --accent-glow:    rgba(79,70,229,.15);
+  --accent-green:   #16a34a;
+  --accent-red:     #dc2626;
+  --accent-yellow:  #ca8a04;
+  --accent-cyan:    #0891b2;
 
-  --text-primary:   #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted:     #4b5563;
+  --text-primary:   #0f172a;
+  --text-secondary: #334155;
+  --text-muted:     #64748b;
 
-  --border:         rgba(255,255,255,.07);
-  --border-accent:  rgba(99,102,241,.4);
+  --border:         rgba(0,0,0,.08);
+  --border-accent:  rgba(79,70,229,.3);
 
   --radius-sm:  6px;
   --radius-md:  10px;

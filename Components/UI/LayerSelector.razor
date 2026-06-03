@@ -89,6 +89,11 @@
         <div class="layer-group" style="margin-top:8px">
             <div class="layer-group-title">🛠 Post-Scaffold Actions</div>
             <div class="layer-item">
+                <input type="checkbox" id="chk-overwrite" @bind="_overwriteExisting" />
+                <label for="chk-overwrite">Overwrite Existing Files</label>
+                <span class="layer-file" style="color:var(--accent-orange)">(Danger)</span>
+            </div>
+            <div class="layer-item">
                 <input type="checkbox" id="chk-injectdb" @bind="_opts.InjectDbContext" />
                 <label for="chk-injectdb">Inject DbSet&lt;T&gt;</label>
                 <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
@@ -172,6 +177,7 @@
     private ScaffoldOptions _opts = new();
     private bool _isRunning = false;
     private bool _showConfirmModal = false;
+    private bool _overwriteExisting = true;
     private List<LogEntry> _logs = new();
 
     protected override void OnInitialized()
@@ -202,7 +208,8 @@
             State.WorkspacePath,
             State.RootNamespace ?? "MyProject",
             State.ActiveEntity,
-            _opts))
+            _opts,
+            _overwriteExisting))
         {
             if (result.Success)
                 _logs.Add(new("✓", result.RelativePath, "log-success"));
