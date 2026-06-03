@@ -15,7 +15,28 @@ public class EntityModel
 
     public List<PropertyModel> Properties { get; set; } = new();
     
-    public IEnumerable<PropertyModel> DtoProperties => Properties.Where(p => !p.IsAuditableProperty);
+    public IEnumerable<PropertyModel> FkProperties => Properties
+        .Where(p => p.IsNavigationProperty && !p.DataType.Contains("<"))
+        .Select(p => new PropertyModel { Name = p.ActualForeignKeyName, DataType = p.ForeignKeyType, IsNullable = p.IsNullable })
+        .Where(fk => !Properties.Any(p => p.Name.Trim().Equals(fk.Name, StringComparison.OrdinalIgnoreCase)));
+
+    public IEnumerable<PropertyModel> CollectionFkProperties => Properties
+        .Where(p => p.IsNavigationProperty && p.DataType.Contains("<"))
+        .Select(p => new PropertyModel { 
+            Name = p.Name.EndsWith("s") ? p.Name.Substring(0, p.Name.Length - 1) + "Ids" : p.Name + "Ids",
+            DataType = $"List<{p.ForeignKeyType}>", 
+            IsNullable = p.IsNullable 
+        })
+        .Where(fk => !Properties.Any(p => p.Name.Trim().Equals(fk.Name, StringComparison.OrdinalIgnoreCase)));
+
+    public IEnumerable<PropertyModel> DtoProperties => Properties
+        .Where(p => !p.IsAuditableProperty && !p.IsNavigationProperty)
+        .Concat(FkProperties)
+        .Concat(CollectionFkProperties);
+        
+    public IEnumerable<PropertyModel> EntityProperties => Properties
+        .Where(p => !p.IsAuditableProperty && !p.IsNavigationProperty)
+        .Concat(FkProperties);
     
     // Auto-derived
     public string EntityNamePlural => string.IsNullOrWhiteSpace(EntityName)

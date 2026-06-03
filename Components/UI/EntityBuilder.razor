@@ -102,10 +102,11 @@
                         <tr>
                             <th style="width:180px">Property Name</th>
                             <th style="width:130px">Data Type</th>
-                            <th style="width:62px;text-align:center">Nullable</th>
-                            <th style="width:42px;text-align:center">PK</th>
-                            <th style="width:62px;text-align:center" title="Public Setter (get; set;)">PubSet</th>
-                            <th style="width:100px;text-align:center">Size/Prec</th>
+                            <th style="width:55px;text-align:center">Nullable</th>
+                            <th style="width:40px;text-align:center">PK</th>
+                            <th style="width:55px;text-align:center" title="Public Setter (get; set;)">PubSet</th>
+                            <th style="width:45px;text-align:center" title="Is Relationship">Rel?</th>
+                            <th style="width:110px;text-align:center">Size/Prec/Type</th>
                             <th style="width:38px"></th>
                         </tr>
                     </thead>
@@ -113,7 +114,7 @@
                         @if (!e.Properties.Any())
                         {
                             <tr class="empty-row">
-                                <td colspan="7">No properties — click "Add Property" below</td>
+                                <td colspan="8">No properties — click "Add Property" below</td>
                             </tr>
                         }
                         @foreach (var prop in e.Properties)
@@ -143,8 +144,25 @@
                                 <td style="text-align:center">
                                     <input type="checkbox" class="prop-checkbox" @bind="prop.HasPublicSetter" title="Check for { get; set; }, uncheck for { get; private set; }" />
                                 </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox" class="prop-checkbox" @bind="prop.IsNavigationProperty" title="Is Navigation Property" />
+                                </td>
                                 <td>
-                                    @if (prop.DataType == "string")
+                                    @if (prop.IsNavigationProperty)
+                                    {
+                                        <select class="td-input" @bind="prop.RelationshipType" style="padding:2px 4px; margin-bottom: 2px;">
+                                            <option value="None">None</option>
+                                            <option value="OneToMany">1:N (One to Many)</option>
+                                            <option value="ManyToOne">N:1 (Many to One)</option>
+                                            <option value="OneToOne">1:1 (One to One)</option>
+                                            <option value="ManyToMany">N:M (Many to Many)</option>
+                                        </select>
+                                        <div style="display:flex; gap: 2px;">
+                                            <input class="td-input" placeholder="Custom FK" @bind="prop.ForeignKeyName" style="padding:2px 4px; font-size: 11px;" title="Leave blank for default (Name + Id)" />
+                                            <input class="td-input" placeholder="Principal Key" @bind="prop.PrincipalKeyName" style="padding:2px 4px; font-size: 11px;" title="Leave blank for default (Id)" />
+                                        </div>
+                                    }
+                                    else if (prop.DataType == "string")
                                     {
                                         <input class="td-input" type="number" placeholder="∞" @bind="prop.MaxLength" title="Max Length" />
                                     }

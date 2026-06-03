@@ -16,14 +16,26 @@ public sealed class {{ entity_name }}Configuration : IEntityTypeConfiguration<{{
         builder.HasKey(x => x.Id);
 
 {{~ for prop in properties ~}}
-    {{~ modifiers = "" ~}}
-    {{~ if !prop.is_nullable; modifiers = modifiers + "\n            .IsRequired()"; end ~}}
-    {{~ if prop.data_type == "string" && prop.max_length; modifiers = modifiers + "\n            .HasMaxLength(" + prop.max_length + ")"; end ~}}
-    {{~ if (prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float") && prop.precision;
-          scale_part = prop.scale != null ? ", " + prop.scale : "";
-          modifiers = modifiers + "\n            .HasPrecision(" + prop.precision + scale_part + ")";
-        end ~}}
+    {{~ if prop.is_navigation_property ~}}
+        {{~ if prop.relationship_type == "OneToMany" ~}}
+        builder.HasMany(x => x.{{ prop.name }}).WithOne();
+        {{~ else if prop.relationship_type == "ManyToOne" ~}}
+        builder.HasOne(x => x.{{ prop.name }}).WithMany().HasForeignKey("{{ prop.actual_foreign_key_name }}"){{ if prop.principal_key_name != null && prop.principal_key_name != "" }}.HasPrincipalKey("{{ prop.principal_key_name }}"){{ end }};
+        {{~ else if prop.relationship_type == "OneToOne" ~}}
+        builder.HasOne(x => x.{{ prop.name }}).WithOne().HasForeignKey<{{ entity_name }}>("{{ prop.actual_foreign_key_name }}"){{ if prop.principal_key_name != null && prop.principal_key_name != "" }}.HasPrincipalKey<{{ prop.data_type }}>("{{ prop.principal_key_name }}"){{ end }};
+        {{~ else if prop.relationship_type == "ManyToMany" ~}}
+        builder.HasMany(x => x.{{ prop.name }}).WithMany();
+        {{~ end ~}}
+    {{~ else ~}}
+        {{~ modifiers = "" ~}}
+        {{~ if !prop.is_nullable; modifiers = modifiers + "\n            .IsRequired()"; end ~}}
+        {{~ if prop.data_type == "string" && prop.max_length; modifiers = modifiers + "\n            .HasMaxLength(" + prop.max_length + ")"; end ~}}
+        {{~ if (prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float") && prop.precision;
+              scale_part = prop.scale != null ? ", " + prop.scale : "";
+              modifiers = modifiers + "\n            .HasPrecision(" + prop.precision + scale_part + ")";
+            end ~}}
         builder.Property(x => x.{{ prop.name }}){{ modifiers }};
+    {{~ end ~}}
 
 {{~ end ~}}
     }
