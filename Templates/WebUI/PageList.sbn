@@ -1,0 +1,293 @@
+@page "/{{ entity_name_plural | string.downcase }}"
+@using {{ root_namespace }}.WebUI.Services
+@using {{ root_namespace }}.WebUI.Services.Models
+@inject {{ entity_name_plural }}Client Client
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject TokenProvider TokenProvider
+
+<AuthorizeView>
+    <Authorized>
+        <div class="page-container pa-4">
+            <!-- Header Section -->
+            <PageHeader Title="{{ entity_name_plural }}"
+                        Subtitle="Browse, search, and manage {{ entity_name_plural | string.downcase }}"
+                        Icon="@Icons.Material.Rounded.{{ icon_name }}"
+                        BadgeText="@($"{_totalItems} Items")">
+                <Actions>
+                    <div class="d-flex align-center gap-2 flex-wrap">
+                        <MudTextField T="string" Value="@_searchString" ValueChanged="@OnSearchChanged"
+                                      Placeholder="Search {{ entity_name_plural | string.downcase }}..." Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
+                                      Class="rounded-lg bg-surface" Style="min-width: 200px; max-width: 280px; font-size: 0.85rem;" />
+
+                        <!-- View Switcher -->
+                        <div class="d-flex align-center border-solid border-1 rounded-lg overflow-hidden" style="border-color: var(--mud-palette-lines-default); background: var(--mud-palette-surface);">
+                            <MudTooltip Text="Grid View">
+                                <MudIconButton Icon="@Icons.Material.Rounded.GridView"
+                                               Size="Size.Small"
+                                               Color="@(!_isTableView ? Color.Primary : Color.Default)"
+                                               OnClick="@(() => _isTableView = false)"
+                                               Style="@(!_isTableView ? "background: rgba(var(--mud-palette-primary-rgb), 0.12);" : "")" />
+                            </MudTooltip>
+                            <MudTooltip Text="Table View">
+                                <MudIconButton Icon="@Icons.Material.Rounded.ViewList"
+                                               Size="Size.Small"
+                                               Color="@(_isTableView ? Color.Primary : Color.Default)"
+                                               OnClick="@(() => _isTableView = true)"
+                                               Style="@(_isTableView ? "background: rgba(var(--mud-palette-primary-rgb), 0.12);" : "")" />
+                            </MudTooltip>
+                        </div>
+
+                        @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Create))
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenCreateDialog" Class="rounded-lg text-transform-none font-weight-bold shadow-sm"
+                                       Size="Size.Medium">
+                                New {{ entity_name }}
+                            </MudButton>
+                        }
+                    </div>
+                </Actions>
+            </PageHeader>
+
+            <!-- Main Content Area -->
+            @if (_isLoading)
+            {
+                <TableSkeleton Rows="5" Columns="5" />
+            }
+            else if (!_items.Any())
+            {
+                <EmptyState Title="No {{ entity_name_plural }} Found"
+                            Description="@(!string.IsNullOrWhiteSpace(_searchString) ? "No matching records found for your search query." : "There are currently no records available. Create a new one to get started.")"
+                            Icon="@Icons.Material.Rounded.{{ icon_name }}"
+                            ActionText="@(TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Create) ? "Create {{ entity_name }}" : null)"
+                            OnAction="OpenCreateDialog" />
+            }
+            else if (_isTableView)
+            {
+                <!-- Table View -->
+                <MudPaper Elevation="0" Class="rounded-xl border-solid border-1 overflow-hidden" Style="border-color: var(--mud-palette-lines-default);">
+                    <MudTable Items="_items" Hover="true" Elevation="0" Dense="true" Class="custom-mud-table">
+                        <HeaderContent>
+{{~ for prop in dto_properties ~}}
+                            <MudTh>{{ prop.name }}</MudTh>
+{{~ end ~}}
+                            <MudTh Style="text-align: right; width: 140px;">Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+{{~ for prop in dto_properties ~}}
+                            <MudTd DataLabel="{{ prop.name }}">@context.{{ prop.name }}</MudTd>
+{{~ end ~}}
+                            <MudTd DataLabel="Actions" Style="text-align: right;">
+                                <div class="d-flex justify-end gap-1">
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Rounded.Visibility" Size="Size.Small" OnClick="@(() => OpenDetailDialog(context))" />
+                                    </MudTooltip>
+                                    @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
+                                    {
+                                        <MudTooltip Text="Edit">
+                                            <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenEditDialog(context))" />
+                                        </MudTooltip>
+                                    }
+                                    @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
+                                    {
+                                        <MudTooltip Text="Delete">
+                                            <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteItem(context))" />
+                                        </MudTooltip>
+                                    }
+                                </div>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            }
+            else
+            {
+                <!-- Grid View -->
+                <MudGrid Spacing="3">
+                    @foreach (var item in _items)
+                    {
+                        <MudItem xs="12" sm="6" md="4" lg="3" @key="item.Id">
+                            <MudCard Elevation="0" Class="rounded-xl border-solid border-1 h-100 d-flex flex-column" Style="border-color: var(--mud-palette-lines-default);">
+                                <MudCardContent Class="flex-grow-1">
+                                    <div class="d-flex justify-space-between align-center mb-3">
+                                        <MudAvatar Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Medium">
+                                            <MudIcon Icon="@Icons.Material.Rounded.{{ icon_name }}" Size="Size.Small" />
+                                        </MudAvatar>
+                                        <div class="d-flex gap-1">
+                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenEditDialog(item))" />
+                                            }
+                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteItem(item))" />
+                                            }
+                                        </div>
+                                    </div>
+{{~ if (dto_properties | array.size) > 0 ~}}
+                                    <MudText Typo="Typo.h6" Class="font-weight-bold mb-1">@item.{{ dto_properties[0].name }}</MudText>
+{{~ end ~}}
+{{~ for prop in dto_properties ~}}
+    {{~ if !for.first ~}}
+                                    <div class="d-flex justify-space-between mt-1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">{{ prop.name }}:</MudText>
+                                        <MudText Typo="Typo.caption" Class="font-weight-medium">@item.{{ prop.name }}</MudText>
+                                    </div>
+    {{~ end ~}}
+{{~ end ~}}
+                                </MudCardContent>
+                                <MudCardActions Class="pa-3 border-t-1" Style="border-color: var(--mud-palette-lines-default);">
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Size="Size.Small" OnClick="@(() => OpenDetailDialog(item))">
+                                        View Details
+                                    </MudButton>
+                                </MudCardActions>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            }
+
+            <!-- Pagination -->
+            @if (_totalPages > 1)
+            {
+                <div class="d-flex justify-center mt-6">
+                    <MudPagination Count="_totalPages" Selected="_currentPage" SelectedChanged="OnPageChanged"
+                                   Color="Color.Primary" Variant="Variant.Filled" Class="rounded-lg shadow-sm" />
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="pa-8 text-center">
+            <MudText Typo="Typo.h6" Color="Color.Error">Access Denied</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">You do not have permission to view {{ entity_name_plural | string.downcase }}.</MudText>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<{{ entity_name }}Dto> _items = new();
+    private bool _isLoading = true;
+    private string? _searchString;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalItems = 0;
+    private int _totalPages = 1;
+    private bool _isTableView = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task OnSearchChanged(string text)
+    {
+        _searchString = text;
+        _currentPage = 1;
+        await LoadData();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        var result = await Client.Get{{ entity_name_plural }}Async(_currentPage, _pageSize, _searchString);
+        if (result.IsSuccess && result.Data != null)
+        {
+            _items = result.Data.Items.ToList();
+            _totalItems = result.Data.TotalCount;
+            _totalPages = (int)Math.Ceiling((double)_totalItems / _pageSize);
+            if (_totalPages < 1) _totalPages = 1;
+        }
+        else
+        {
+            _items = new();
+            _totalItems = 0;
+            _totalPages = 1;
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                Snackbar.Add(result.Error, Severity.Error);
+            }
+        }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<Create{{ entity_name }}Dialog>("New {{ entity_name }}", options);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenEditDialog({{ entity_name }}Dto item)
+    {
+        var parameters = new DialogParameters<Edit{{ entity_name }}Dialog>
+        {
+            { x => x.Item, item }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<Edit{{ entity_name }}Dialog>("Edit {{ entity_name }}", parameters, options);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenDetailDialog({{ entity_name }}Dto item)
+    {
+        var parameters = new DialogParameters<{{ entity_name }}DetailDialog>
+        {
+            { x => x.Item, item }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<{{ entity_name }}DetailDialog>("{{ entity_name }} Details", parameters, options);
+    }
+
+    private async Task DeleteItem({{ entity_name }}Dto item)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete {{ entity_name }}" },
+            { x => x.Message, "Are you sure you want to permanently delete this {{ entity_name | string.downcase }}? All linked records will be affected." },
+            { x => x.ItemName, item.Id.ToString() },
+            { x => x.ConfirmText, "Delete {{ entity_name }}" },
+            { x => x.ConfirmColor, Color.Error }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("Delete {{ entity_name }}", parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is not null && !dialogResult.Canceled)
+        {
+            var result = await Client.Delete{{ entity_name }}Async(item.Id);
+            if (result.IsSuccess)
+            {
+                Snackbar.Add("{{ entity_name }} deleted successfully", Severity.Success);
+                if (_items.Count == 1 && _currentPage > 1)
+                    _currentPage--;
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add($"Failed to delete: {result.Error}", Severity.Error);
+            }
+        }
+    }
+}

@@ -16,7 +16,7 @@ public sealed class {{ entity_name }}Configuration : IEntityTypeConfiguration<{{
         builder.HasKey(x => x.Id);
 
 {{~ for prop in properties ~}}
-    {{~ if prop.is_navigation_property ~}}
+    {{~ if prop.is_navigation_property && !prop.is_primitive_type ~}}
         {{~ if prop.relationship_type == "OneToMany" ~}}
         builder.HasMany(x => x.{{ prop.name }}).WithOne();
         {{~ else if prop.relationship_type == "ManyToOne" ~}}

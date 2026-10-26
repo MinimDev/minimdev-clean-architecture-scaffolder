@@ -1,0 +1,14 @@
+using {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
+using {{ root_namespace }}.Domain.Entities;
+using Mapster;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Mappings;
+
+public class {{ entity_name }}MappingConfig : IRegister
+{
+    public void Register(TypeAdapterConfig config)
+    {
+        config.NewConfig<{{ entity_name }}, {{ entity_name }}Dto>()
+            .IgnoreNullValues(true);
+    }
+}

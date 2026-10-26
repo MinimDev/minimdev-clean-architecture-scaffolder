@@ -1,0 +1,119 @@
+using System.Net.Http.Json;
+using {{ root_namespace }}.WebUI.Services.Models;
+
+namespace {{ root_namespace }}.WebUI.Services;
+
+public class {{ entity_name_plural }}Client
+{
+    private readonly AuthorizedHttpClient _httpClient;
+    private readonly TokenProvider _tokenProvider;
+
+    public {{ entity_name_plural }}Client(
+        AuthorizedHttpClient httpClient,
+        TokenProvider tokenProvider)
+    {
+        _httpClient = httpClient;
+        _tokenProvider = tokenProvider;
+    }
+
+    public async Task<Result<PaginatedList<{{ entity_name }}Dto>>> Get{{ entity_name_plural }}Async(int pageNumber, int pageSize, string? searchTerm = null)
+    {
+        var queryString = $"?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (!string.IsNullOrEmpty(searchTerm))
+            queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/{{ entity_name_plural }}{queryString}");
+            using var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var tokenStatus = string.IsNullOrEmpty(_tokenProvider.Token) ? "NO TOKEN" : "token present";
+                return new Result<PaginatedList<{{ entity_name }}Dto>>
+                {
+                    IsSuccess = false,
+                    Error = $"HTTP {(int)response.StatusCode} ({tokenStatus})"
+                };
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<Result<PaginatedList<{{ entity_name }}Dto>>>();
+            return result ?? new Result<PaginatedList<{{ entity_name }}Dto>> { IsSuccess = false, Error = "Empty response from server" };
+        }
+        catch (Exception ex)
+        {
+            return new Result<PaginatedList<{{ entity_name }}Dto>>
+            {
+                IsSuccess = false,
+                Error = $"Failed to fetch {{ entity_name_plural | string.downcase }}: {ex.Message}"
+            };
+        }
+    }
+
+    public async Task<Result<{{ entity_name }}Dto>> Get{{ entity_name }}ByIdAsync(Guid id)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/{{ entity_name_plural }}/{id}");
+            using var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new Result<{{ entity_name }}Dto>
+                {
+                    IsSuccess = false,
+                    Error = $"HTTP {(int)response.StatusCode}"
+                };
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<Result<{{ entity_name }}Dto>>();
+            return result ?? new Result<{{ entity_name }}Dto> { IsSuccess = false, Error = "Empty response from server" };
+        }
+        catch (Exception ex)
+        {
+            return new Result<{{ entity_name }}Dto> { IsSuccess = false, Error = ex.Message };
+        }
+    }
+
+    public async Task<Result<Guid>> Create{{ entity_name }}Async(Create{{ entity_name }}Command command)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/v1/{{ entity_name_plural }}", command);
+            var result = await response.Content.ReadFromJsonAsync<Result<Guid>>();
+            return result ?? new Result<Guid> { IsSuccess = false, Error = "Empty response from server" };
+        }
+        catch (Exception ex)
+        {
+            return new Result<Guid> { IsSuccess = false, Error = ex.Message };
+        }
+    }
+
+    public async Task<Result<bool>> Update{{ entity_name }}Async(Guid id, Update{{ entity_name }}Dto dto)
+    {
+        try
+        {
+            using var response = await _httpClient.PutAsJsonAsync($"api/v1/{{ entity_name_plural }}/{id}", dto);
+            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
+            return result ?? new Result<bool> { IsSuccess = false, Error = "Empty response from server" };
+        }
+        catch (Exception ex)
+        {
+            return new Result<bool> { IsSuccess = false, Error = ex.Message };
+        }
+    }
+
+    public async Task<Result<bool>> Delete{{ entity_name }}Async(Guid id)
+    {
+        try
+        {
+            using var response = await _httpClient.DeleteAsync($"api/v1/{{ entity_name_plural }}/{id}");
+            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
+            return result ?? new Result<bool> { IsSuccess = false, Error = "Empty response from server" };
+        }
+        catch (Exception ex)
+        {
+            return new Result<bool> { IsSuccess = false, Error = ex.Message };
+        }
+    }
+}

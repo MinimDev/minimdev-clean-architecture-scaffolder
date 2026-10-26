@@ -70,27 +70,31 @@ public class CodeGenerator
             }
         }
 
+        if (options.GeneratePermissions)
+        {
+            var permResult = await InjectPermissionsAsync(workspacePath, rootNamespace, entity);
+            yield return new ScaffoldResult("Permissions.cs", permResult.success, permResult.error);
+        }
+
         if (options.InjectDbContext)
         {
             var ifaceResult = await InjectDbSetAsync(workspacePath, rootNamespace, entity, true);
-            if (ifaceResult.success)
-            {
-                yield return new ScaffoldResult("IApplicationDbContext.cs", true, ifaceResult.error);
-            }
-            else
-            {
-                yield return new ScaffoldResult("IApplicationDbContext.cs", false, ifaceResult.error);
-            }
+            yield return new ScaffoldResult("IApplicationDbContext.cs", ifaceResult.success, ifaceResult.error);
 
             var classResult = await InjectDbSetAsync(workspacePath, rootNamespace, entity, false);
-            if (classResult.success)
-            {
-                yield return new ScaffoldResult("ApplicationDbContext.cs", true, classResult.error);
-            }
-            else
-            {
-                yield return new ScaffoldResult("ApplicationDbContext.cs", false, classResult.error);
-            }
+            yield return new ScaffoldResult("ApplicationDbContext.cs", classResult.success, classResult.error);
+        }
+
+        if (options.InjectWebUIDependencies)
+        {
+            var webUiDiResult = await InjectWebUIDependencyAsync(workspacePath, rootNamespace, entity);
+            yield return new ScaffoldResult("WebUI/Program.cs (DI)", webUiDiResult.success, webUiDiResult.error);
+        }
+
+        if (options.InjectNavMenu)
+        {
+            var navResult = await InjectNavMenuAsync(workspacePath, rootNamespace, entity);
+            yield return new ScaffoldResult("NavMenu.razor", navResult.success, navResult.error);
         }
     }
 
@@ -156,6 +160,10 @@ public class CodeGenerator
                 $"src/Core/{ns}.Application/Features/{pl}/Queries/Get{n}ById/Get{n}ByIdQueryHandler.cs"));
         }
 
+        if (opts.GenerateMappingConfig)
+            list.Add(("Application/MappingConfig.sbn",
+                $"src/Core/{ns}.Application/Features/{pl}/Mappings/{n}MappingConfig.cs"));
+
         if (opts.GeneratePersistenceConfig)
             list.Add(("Persistence/EfConfiguration.sbn",
                 $"src/Infrastructure/{ns}.Infrastructure.Persistence/Configurations/{n}Configuration.cs"));
@@ -167,6 +175,34 @@ public class CodeGenerator
         if (opts.GenerateController)
             list.Add(("WebAPI/Controller.sbn",
                 $"src/Presentation/{ns}.WebAPI/Controllers/{pl}Controller.cs"));
+
+        if (opts.GenerateWebUIModels)
+        {
+            list.Add(("WebUI/Dto.sbn",
+                $"src/Presentation/{ns}.WebUI/Services/Models/{n}Dto.cs"));
+            list.Add(("WebUI/CreateCommandModel.sbn",
+                $"src/Presentation/{ns}.WebUI/Services/Models/Create{n}Command.cs"));
+            list.Add(("WebUI/UpdateDtoModel.sbn",
+                $"src/Presentation/{ns}.WebUI/Services/Models/Update{n}Dto.cs"));
+        }
+
+        if (opts.GenerateWebUIClient)
+        {
+            list.Add(("WebUI/ClientService.sbn",
+                $"src/Presentation/{ns}.WebUI/Services/{pl}Client.cs"));
+        }
+
+        if (opts.GenerateWebUIPages)
+        {
+            list.Add(("WebUI/PageList.sbn",
+                $"src/Presentation/{ns}.WebUI/Components/Pages/{pl}/{pl}.razor"));
+            list.Add(("WebUI/CreateDialog.sbn",
+                $"src/Presentation/{ns}.WebUI/Components/Pages/{pl}/Create{n}Dialog.razor"));
+            list.Add(("WebUI/EditDialog.sbn",
+                $"src/Presentation/{ns}.WebUI/Components/Pages/{pl}/Edit{n}Dialog.razor"));
+            list.Add(("WebUI/DetailDialog.sbn",
+                $"src/Presentation/{ns}.WebUI/Components/Pages/{pl}/{n}DetailDialog.razor"));
+        }
 
         return list;
     }
@@ -249,5 +285,122 @@ public class CodeGenerator
         }
 
         return (true, "Already exists (skipped)");
+    }
+
+    private async Task<(bool success, string? error)> InjectPermissionsAsync(string workspacePath, string rootNamespace, EntityModel entity)
+    {
+        var pl = entity.EntityNamePlural;
+        var relativePaths = new[]
+        {
+            $"src/Core/{rootNamespace}.Application/Common/Security/Permissions.cs",
+            $"src/Presentation/{rootNamespace}.WebUI/Services/Models/Permissions.cs"
+        };
+
+        bool anyModified = false;
+
+        foreach (var relPath in relativePaths)
+        {
+            var fullPath = Path.Combine(workspacePath, relPath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(fullPath)) continue;
+
+            string source = await File.ReadAllTextAsync(fullPath);
+            if (source.Contains($"class {pl}")) continue;
+
+            var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source);
+            var root = await tree.GetRootAsync();
+            var classDecl = root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>()
+                .FirstOrDefault(c => c.Identifier.Text == "Permissions");
+
+            if (classDecl != null)
+            {
+                int insertPos = classDecl.OpenBraceToken.Span.End;
+                string block = $"\n    public static class {pl}\n    {{\n        public const string View = \"Permissions.{pl}.View\";\n        public const string Create = \"Permissions.{pl}.Create\";\n        public const string Edit = \"Permissions.{pl}.Edit\";\n        public const string Delete = \"Permissions.{pl}.Delete\";\n    }}\n";
+                
+                var lastNestedClass = classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>().LastOrDefault();
+                if (lastNestedClass != null)
+                {
+                    insertPos = lastNestedClass.FullSpan.End;
+                }
+
+                string newSource = source.Insert(insertPos, block);
+                await File.WriteAllTextAsync(fullPath, newSource);
+                anyModified = true;
+            }
+        }
+
+        return (true, anyModified ? null : "Permissions already exist or files not found (skipped)");
+    }
+
+    private async Task<(bool success, string? error)> InjectWebUIDependencyAsync(string workspacePath, string rootNamespace, EntityModel entity)
+    {
+        var pl = entity.EntityNamePlural;
+        var relPath = $"src/Presentation/{rootNamespace}.WebUI/Program.cs";
+        var fullPath = Path.Combine(workspacePath, relPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath)) return (false, "WebUI/Program.cs not found");
+
+        string source = await File.ReadAllTextAsync(fullPath);
+        if (source.Contains($"AddScoped<{pl}Client>"))
+        {
+            return (true, $"{pl}Client already registered (skipped)");
+        }
+
+        int targetIndex = source.LastIndexOf("builder.Services.AddScoped<");
+        if (targetIndex >= 0)
+        {
+            int lineEnd = source.IndexOf('\n', targetIndex);
+            if (lineEnd >= 0)
+            {
+                string line = $"\nbuilder.Services.AddScoped<{pl}Client>();";
+                string newSource = source.Insert(lineEnd, line);
+                await File.WriteAllTextAsync(fullPath, newSource);
+                return (true, null);
+            }
+        }
+
+        return (false, "Could not find builder.Services insertion point in WebUI/Program.cs");
+    }
+
+    private async Task<(bool success, string? error)> InjectNavMenuAsync(string workspacePath, string rootNamespace, EntityModel entity)
+    {
+        var pl = entity.EntityNamePlural;
+        var icon = string.IsNullOrWhiteSpace(entity.IconName) ? "Inventory2" : entity.IconName;
+        var relPath = $"src/Presentation/{rootNamespace}.WebUI/Components/Layout/NavMenu.razor";
+        var fullPath = Path.Combine(workspacePath, relPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath)) return (false, "NavMenu.razor not found");
+
+        string source = await File.ReadAllTextAsync(fullPath);
+        if (source.Contains($"Href=\"{pl.ToLower()}\"") || source.Contains($"Permissions.{pl}.View"))
+        {
+            return (true, "NavMenu item already exists (skipped)");
+        }
+
+        string navSnippet = $"\n        @if (TokenProvider.HasPermission(Permissions.{pl}.View))\n        {{\n            <MudNavLink Href=\"{pl.ToLower()}\" Match=\"NavLinkMatch.Prefix\" Icon=\"@Icons.Material.Rounded.{icon}\" Class=\"nav-item-modern\">\n                {pl}\n            </MudNavLink>\n        }}\n";
+
+        int insertPos = -1;
+        int productsNav = source.IndexOf("Permissions.Products.View");
+        if (productsNav >= 0)
+        {
+            int closingBrace = source.IndexOf('}', productsNav);
+            if (closingBrace >= 0) insertPos = closingBrace + 1;
+        }
+
+        if (insertPos < 0)
+        {
+            int mainSection = source.IndexOf("<!-- Main Navigation Section -->");
+            if (mainSection >= 0)
+            {
+                int lineEnd = source.IndexOf('\n', mainSection);
+                if (lineEnd >= 0) insertPos = lineEnd + 1;
+            }
+        }
+
+        if (insertPos >= 0)
+        {
+            string newSource = source.Insert(insertPos, navSnippet);
+            await File.WriteAllTextAsync(fullPath, newSource);
+            return (true, null);
+        }
+
+        return (false, "Could not find suitable insertion point in NavMenu.razor");
     }
 }

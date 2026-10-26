@@ -1,0 +1,8 @@
+namespace {{ root_namespace }}.WebUI.Services.Models;
+
+public class Create{{ entity_name }}Command
+{
+{{~ for prop in dto_properties ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; set; }{{ if prop.data_type == "string" && !prop.is_nullable }} = string.Empty;{{ end }}
+{{~ end ~}}
+}

@@ -1,0 +1,103 @@
+@using {{ root_namespace }}.WebUI.Services
+@using {{ root_namespace }}.WebUI.Services.Models
+@using MudBlazor
+@inject {{ entity_name_plural }}Client Client
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_isValid">
+{{~ for prop in dto_properties ~}}
+    {{~ if prop.data_type == "string" ~}}
+            <MudTextField T="string" Label="{{ prop.name }}" Variant="Variant.Outlined" {{ if prop.is_required }}Required="true" RequiredError="{{ prop.name }} is required!"{{ end }} @bind-Value="Command.{{ prop.name }}" Class="mb-4" />
+    {{~ else if prop.data_type == "int" || prop.data_type == "long" || prop.data_type == "short" ~}}
+            <MudNumericField T="{{ prop.data_type }}" Label="{{ prop.name }}" Variant="Variant.Outlined" {{ if prop.is_required }}Required="true"{{ end }} @bind-Value="Command.{{ prop.name }}" Class="mb-4" />
+    {{~ else if prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float" ~}}
+            <MudNumericField T="{{ prop.data_type }}" Label="{{ prop.name }}" Variant="Variant.Outlined" {{ if prop.is_required }}Required="true"{{ end }} @bind-Value="Command.{{ prop.name }}" Class="mb-4" />
+    {{~ else if prop.data_type == "bool" ~}}
+            <MudCheckBox T="bool" Label="{{ prop.name }}" @bind-Value="Command.{{ prop.name }}" Class="mb-4" />
+    {{~ else ~}}
+            <MudTextField T="{{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }}" Label="{{ prop.name }}" Variant="Variant.Outlined" @bind-Value="Command.{{ prop.name }}" Class="mb-4" />
+    {{~ end ~}}
+{{~ end ~}}
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Class="rounded-lg mr-2 text-transform-none font-weight-bold">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_isSaving" Class="rounded-lg px-6 text-transform-none font-weight-bold shadow-sm">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Class="ms-n1 mr-2" Size="Size.Small" Indeterminate="true" />
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Save Changes</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public {{ entity_name }}Dto Item { get; set; } = new();
+
+    private Update{{ entity_name }}Dto Command { get; set; } = new();
+    private MudForm _form = default!;
+    private bool _isValid;
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        Command = new Update{{ entity_name }}Dto
+        {
+{{~ for prop in dto_properties ~}}
+            {{ prop.name }} = Item.{{ prop.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        if (_isSaving) return;
+        _isSaving = true;
+        StateHasChanged();
+
+        await _form.ValidateAsync();
+
+        if (!_isValid)
+        {
+            _isSaving = false;
+            StateHasChanged();
+            return;
+        }
+
+        var result = await Client.Update{{ entity_name }}Async(Item.Id, Command);
+
+        if (result.IsSuccess)
+        {
+            Snackbar.Add("{{ entity_name }} updated successfully", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            if (result.Errors != null && result.Errors.Any())
+            {
+                foreach (var error in result.Errors)
+                {
+                    Snackbar.Add(error, Severity.Error);
+                }
+            }
+            else
+            {
+                Snackbar.Add(result.Error ?? "Failed to update {{ entity_name | string.downcase }}", Severity.Error);
+            }
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+}

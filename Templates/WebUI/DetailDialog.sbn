@@ -1,0 +1,49 @@
+@using {{ root_namespace }}.WebUI.Services.Models
+
+<MudDialog ContentClass="pa-0" Class="overflow-hidden">
+    <DialogContent>
+        <!-- Hero Section -->
+        <div style="height: 140px; background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); position: relative; margin-top: -16px;" class="d-flex flex-column justify-center align-center mb-6">
+            <MudIcon Icon="@Icons.Material.Rounded.{{ icon_name }}" Style="font-size: 5rem; color: rgba(255,255,255,0.9); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));" />
+        </div>
+
+        <!-- Details Section -->
+        <div class="px-6 pb-4">
+            <MudText Typo="Typo.h5" Class="font-weight-bold mb-4" Style="letter-spacing: -0.02em;">{{ entity_name }} Details</MudText>
+
+            <MudGrid Spacing="2">
+{{~ for prop in dto_properties ~}}
+                <MudItem xs="6">
+                    <MudPaper Elevation="0" Class="pa-3 rounded-lg" Style="background-color: var(--mud-palette-background-grey);">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="font-weight-medium text-uppercase mb-1">{{ prop.name }}</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                            @(Item.{{ prop.name }}?.ToString() ?? "—")
+                        </MudText>
+                    </MudPaper>
+                </MudItem>
+{{~ end ~}}
+                <MudItem xs="12">
+                    <MudPaper Elevation="0" Class="pa-3 rounded-lg d-flex align-center justify-space-between" Style="background-color: var(--mud-palette-background-grey);">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Rounded.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Created At</MudText>
+                        </div>
+                        <MudText Typo="Typo.caption" Class="font-weight-bold">@Item.CreatedAt.ToString("MMM dd, yyyy HH:mm")</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Primary" Variant="Variant.Filled" Class="rounded-lg px-6 text-transform-none font-weight-bold">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public {{ entity_name }}Dto Item { get; set; } = new();
+
+    private void Close() => MudDialog.Close();
+}

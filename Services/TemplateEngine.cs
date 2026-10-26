@@ -31,6 +31,7 @@ public class TemplateEngine
             ? entity.EntityNamePlural
             : entity.TableName);
         scriptObject.Add("db_schema", entity.DbSchema);
+        scriptObject.Add("icon_name", string.IsNullOrWhiteSpace(entity.IconName) ? "Inventory2" : entity.IconName);
         scriptObject.Add("properties", entity.Properties);
         scriptObject.Add("dto_properties", entity.DtoProperties);
         scriptObject.Add("entity_properties", entity.EntityProperties);

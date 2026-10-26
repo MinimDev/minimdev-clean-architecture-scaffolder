@@ -57,6 +57,16 @@
                 <label for="chk-qry-getbyid">GetById Query</label>
                 <span class="layer-file">Queries/</span>
             </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-mapster" @bind="_opts.GenerateMappingConfig" />
+                <label for="chk-mapster">Mapster Config</label>
+                <span class="layer-file">Mappings/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-perms" @bind="_opts.GeneratePermissions" />
+                <label for="chk-perms">Permissions PBAC</label>
+                <span class="layer-file" style="color:var(--accent-cyan)">Permissions.cs</span>
+            </div>
         </div>
 
         <div class="layer-group" style="margin-top:8px">
@@ -82,10 +92,40 @@
             </div>
             <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateController ? "1" : "0.5")">
                 <input type="checkbox" id="chk-auth" @bind="_opts.RequireAuthorization" disabled="@(!_opts.GenerateController)" />
-                <label for="chk-auth">Require [Authorize]</label>
+                <label for="chk-auth">PBAC [HasPermission]</label>
                 <span class="layer-file">Security</span>
             </div>
         </div>
+
+        <div class="layer-group" style="margin-top:8px">
+            <div class="layer-group-title">🖥️ WebUI (MudBlazor)</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-webui-client" @bind="_opts.GenerateWebUIClient" />
+                <label for="chk-webui-client">Typed API Client</label>
+                <span class="layer-file">Services/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-webui-models" @bind="_opts.GenerateWebUIModels" />
+                <label for="chk-webui-models">Client DTOs</label>
+                <span class="layer-file">Services/Models/</span>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk-webui-pages" @bind="_opts.GenerateWebUIPages" />
+                <label for="chk-webui-pages">CRUD Pages & Dialogs</label>
+                <span class="layer-file">Components/Pages/</span>
+            </div>
+            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIClient ? "1" : "0.5")">
+                <input type="checkbox" id="chk-webui-di" @bind="_opts.InjectWebUIDependencies" disabled="@(!_opts.GenerateWebUIClient)" />
+                <label for="chk-webui-di">Register DI in Program.cs</label>
+                <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
+            </div>
+            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIPages ? "1" : "0.5")">
+                <input type="checkbox" id="chk-webui-nav" @bind="_opts.InjectNavMenu" disabled="@(!_opts.GenerateWebUIPages)" />
+                <label for="chk-webui-nav">Add NavMenu Link</label>
+                <span class="layer-file" style="color:var(--accent-cyan)">(Nav)</span>
+            </div>
+        </div>
+
         <div class="layer-group" style="margin-top:8px">
             <div class="layer-group-title">🛠 Post-Scaffold Actions</div>
             <div class="layer-item">

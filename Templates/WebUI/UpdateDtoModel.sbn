@@ -1,0 +1,8 @@
+namespace {{ root_namespace }}.WebUI.Services.Models;
+
+public class Update{{ entity_name }}Dto
+{
+{{~ for prop in dto_properties ~}}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; set; }{{ if prop.data_type == "string" && !prop.is_nullable }} = string.Empty;{{ end }}
+{{~ end ~}}
+}

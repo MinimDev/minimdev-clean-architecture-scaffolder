@@ -6,6 +6,7 @@ public class EntityModel
     public string EntityName { get; set; } = string.Empty;
     public string TableName { get; set; } = string.Empty;
     public string DbSchema { get; set; } = "dbo";
+    public string IconName { get; set; } = "Inventory2";
 
     public bool UseBaseEntity { get; set; } = true;
     public string BaseClassName { get; set; } = "BaseAuditableEntity";
