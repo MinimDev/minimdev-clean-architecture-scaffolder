@@ -1,6 +1,7 @@
 using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Domain.Entities;
+using {{ root_namespace }}.Domain.Errors;
 using MediatR;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Delete{{ entity_name }};
@@ -20,7 +21,7 @@ public class Delete{{ entity_name }}CommandHandler : IRequestHandler<Delete{{ en
         {
             var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
             if ({{ entity_name_camel }} == null)
-                return Result<Unit>.Failure("{{ entity_name }} not found");
+                return Result<Unit>.Failure({{ entity_name }}Errors.NotFound);
 
             _unitOfWork.Repository<{{ entity_name }}>().Delete({{ entity_name_camel }});
             await _unitOfWork.SaveChangesAsync(cancellationToken);

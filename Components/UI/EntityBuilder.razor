@@ -112,32 +112,48 @@
                 </div>
             }
 
-            <!-- Property Table -->
-            <div class="section-label">Properties</div>
+            <!-- Property Table Header & Presets -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <div class="section-label" style="margin-bottom:0;">
+                    Properties (@e.Properties.Count)
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn-preset-mini" @onclick="() => AddMasterFields(e)" title="Add Code, Name, Description, IsActive">
+                        ⚡ + Master Fields
+                    </button>
+                    <button class="btn-preset-mini" @onclick="() => AddAuditFields(e)" title="Add CreatedAtUtc, CreatedBy, LastModifiedAtUtc, LastModifiedBy">
+                        🕒 + Audit Fields
+                    </button>
+                    <button class="btn-add-prop-top" @onclick="() => AddProperty(e)">
+                        ＋ Add Property
+                    </button>
+                </div>
+            </div>
+
             <div class="prop-table-wrap">
                 <table class="prop-table">
                     <thead>
                         <tr>
-                            <th style="width:180px">Property Name</th>
-                            <th style="width:130px">Data Type</th>
-                            <th style="width:55px;text-align:center">Nullable</th>
-                            <th style="width:40px;text-align:center">PK</th>
-                            <th style="width:55px;text-align:center" title="Public Setter (get; set;)">PubSet</th>
-                            <th style="width:45px;text-align:center" title="Is Relationship">Rel?</th>
-                            <th style="width:110px;text-align:center">Size/Prec/Type</th>
-                            <th style="width:38px"></th>
+                            <th style="width:190px">Property Name</th>
+                            <th style="width:140px">Data Type</th>
+                            <th style="width:50px;text-align:center" title="Nullable?">Null</th>
+                            <th style="width:40px;text-align:center" title="Primary Key">PK</th>
+                            <th style="width:50px;text-align:center" title="Public Setter (get; set;)">Pub</th>
+                            <th style="width:55px;text-align:center" title="Navigation Relationship Property">Rel?</th>
+                            <th style="width:90px;text-align:center">Constraints</th>
+                            <th style="width:95px;text-align:center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (!e.Properties.Any())
                         {
                             <tr class="empty-row">
-                                <td colspan="8">No properties — click "Add Property" below</td>
+                                <td colspan="8">No properties — click "+ Add Property" or use a quick preset above</td>
                             </tr>
                         }
                         @foreach (var prop in e.Properties)
                         {
-                            <tr class="prop-row-enter" @key="prop.Id">
+                            <tr class="prop-row-enter @(prop.IsNavigationProperty ? "prop-row-rel" : "")" @key="prop.Id">
                                 <td>
                                     <input class="td-input"
                                            placeholder="e.g. Name"
@@ -152,6 +168,11 @@
                                         @foreach (var t in PropertyModel.SupportedTypes)
                                         {
                                             <option value="@t">@t</option>
+                                        }
+                                        @foreach (var we in State.Entities.Where(x => !string.IsNullOrEmpty(x.EntityName) && x != e))
+                                        {
+                                            <option value="@we.EntityName">@we.EntityName (Entity)</option>
+                                            <option value="@($"List<{we.EntityName}>")">List&lt;@we.EntityName&gt; (Collection)</option>
                                         }
                                     </datalist>
                                 </td>
@@ -171,43 +192,90 @@
                                            style="@(prop.IsPrimitiveType ? "opacity:0.25; cursor:not-allowed;" : "cursor:pointer;")"
                                            title="@(prop.IsPrimitiveType ? "Relasi (Navigation Property) hanya untuk tipe Entitas kustom (bukan tipe primitif)" : "Is Navigation Property")" />
                                 </td>
-                                <td>
+                                <td style="text-align:center">
                                     @if (prop.IsNavigationProperty)
                                     {
-                                        <select class="td-input" @bind="prop.RelationshipType" style="padding:2px 4px; margin-bottom: 2px;">
-                                            <option value="None">None</option>
-                                            <option value="OneToMany">1:N (One to Many)</option>
-                                            <option value="ManyToOne">N:1 (Many to One)</option>
-                                            <option value="OneToOne">1:1 (One to One)</option>
-                                            <option value="ManyToMany">N:M (Many to Many)</option>
-                                        </select>
-                                        <div style="display:flex; gap: 2px;">
-                                            <input class="td-input" placeholder="Custom FK" @bind="prop.ForeignKeyName" style="padding:2px 4px; font-size: 11px;" title="Leave blank for default (Name + Id)" />
-                                            <input class="td-input" placeholder="Principal Key" @bind="prop.PrincipalKeyName" style="padding:2px 4px; font-size: 11px;" title="Leave blank for default (Id)" />
-                                        </div>
+                                        <span class="badge-rel-pill" title="Configured in sub-card below">🔗 @prop.RelationshipType</span>
                                     }
                                     else if (prop.DataType == "string")
                                     {
-                                        <input class="td-input" type="number" placeholder="∞" @bind="prop.MaxLength" title="Max Length" />
+                                        <input class="td-input" type="number" placeholder="∞" @bind="prop.MaxLength" title="Max Length" style="text-align:center;" />
                                     }
                                     else if (prop.DataType == "decimal" || prop.DataType == "double" || prop.DataType == "float")
                                     {
                                         <div style="display:flex;gap:2px">
-                                            <input class="td-input" type="number" placeholder="18" @bind="prop.Precision" style="width:50%;padding:4px" title="Precision" />
-                                            <input class="td-input" type="number" placeholder="2" @bind="prop.Scale" style="width:50%;padding:4px" title="Scale" />
+                                            <input class="td-input" type="number" placeholder="18" @bind="prop.Precision" style="width:50%;padding:4px;text-align:center;" title="Precision" />
+                                            <input class="td-input" type="number" placeholder="2" @bind="prop.Scale" style="width:50%;padding:4px;text-align:center;" title="Scale" />
                                         </div>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--text-muted);padding-left:4px;font-size:12px">—</span>
+                                        <span style="color:var(--text-muted);font-size:12px">—</span>
                                     }
                                 </td>
                                 <td>
-                                    <button class="btn-icon-delete"
-                                            @onclick="() => DeleteProperty(e, prop)"
-                                            title="Remove">✕</button>
+                                    <div style="display:flex; gap:2px; justify-content:center; align-items:center;">
+                                        <button class="btn-icon-action"
+                                                @onclick="() => MoveUp(e, prop)"
+                                                disabled="@(e.Properties.IndexOf(prop) == 0)"
+                                                title="Move Up">▲</button>
+                                        <button class="btn-icon-action"
+                                                @onclick="() => MoveDown(e, prop)"
+                                                disabled="@(e.Properties.IndexOf(prop) == e.Properties.Count - 1)"
+                                                title="Move Down">▼</button>
+                                        <button class="btn-icon-action"
+                                                @onclick="() => DuplicateProp(e, prop)"
+                                                title="Duplicate Property">📋</button>
+                                        <button class="btn-icon-delete"
+                                                @onclick="() => DeleteProperty(e, prop)"
+                                                title="Remove">✕</button>
+                                    </div>
                                 </td>
                             </tr>
+                            @if (prop.IsNavigationProperty)
+                            {
+                                <tr class="prop-relation-row" @key="@($"rel-card-{prop.Id}")">
+                                    <td colspan="8" class="prop-relation-cell">
+                                        <div class="relation-card">
+                                            <div class="relation-card-header">
+                                                <span class="relation-badge">🔗 EF Core Navigation Property Configuration</span>
+                                                <span class="relation-helper">Tipe relasi & pemetaan foreign key untuk <strong>@prop.Name</strong></span>
+                                            </div>
+                                            <div class="relation-grid">
+                                                <div class="form-group">
+                                                    <label class="form-label" style="font-size:10px;">Relationship Type</label>
+                                                    <select class="form-input" style="font-size:12px; padding:4px 8px;" @bind="prop.RelationshipType" @bind:after="State.NotifyStateChanged">
+                                                        <option value="None">None</option>
+                                                        <option value="ManyToOne">N:1 (Many to One - e.g. Belongs to Parent)</option>
+                                                        <option value="OneToMany">1:N (One to Many - e.g. Has Many Children)</option>
+                                                        <option value="OneToOne">1:1 (One to One)</option>
+                                                        <option value="ManyToMany">N:M (Many to Many)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" style="font-size:10px;">Foreign Key Name</label>
+                                                    <input class="form-input" 
+                                                           style="font-size:12px; padding:4px 8px;"
+                                                           placeholder="@prop.ActualForeignKeyName" 
+                                                           @bind="prop.ForeignKeyName" 
+                                                           title="Leave blank for auto default" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" style="font-size:10px;">Principal Key</label>
+                                                    <input class="form-input" 
+                                                           style="font-size:12px; padding:4px 8px;"
+                                                           placeholder="Id" 
+                                                           @bind="prop.PrincipalKeyName" 
+                                                           title="Defaults to Id" />
+                                                </div>
+                                            </div>
+                                            <div class="relation-preview">
+                                                <span>💡 Auto-derived FK Property: <strong style="color:var(--accent-cyan)">@prop.ActualForeignKeyName</strong> (@prop.ForeignKeyType)</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
@@ -234,6 +302,36 @@
     private void DeleteProperty(EntityModel entity, PropertyModel prop)
     {
         entity.Properties.Remove(prop);
+        State.NotifyStateChanged();
+    }
+
+    private void MoveUp(EntityModel entity, PropertyModel prop)
+    {
+        entity.MovePropertyUp(prop);
+        State.NotifyStateChanged();
+    }
+
+    private void MoveDown(EntityModel entity, PropertyModel prop)
+    {
+        entity.MovePropertyDown(prop);
+        State.NotifyStateChanged();
+    }
+
+    private void DuplicateProp(EntityModel entity, PropertyModel prop)
+    {
+        entity.DuplicateProperty(prop);
+        State.NotifyStateChanged();
+    }
+
+    private void AddAuditFields(EntityModel entity)
+    {
+        entity.AddAuditFields();
+        State.NotifyStateChanged();
+    }
+
+    private void AddMasterFields(EntityModel entity)
+    {
+        entity.AddMasterFields();
         State.NotifyStateChanged();
     }
 

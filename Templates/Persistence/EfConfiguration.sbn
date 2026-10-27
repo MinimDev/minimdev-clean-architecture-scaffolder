@@ -13,7 +13,11 @@ public sealed class {{ entity_name }}Configuration : IEntityTypeConfiguration<{{
     {
         builder.ToTable("{{ table_name }}", "{{ db_schema }}");
 
-        builder.HasKey(x => x.Id);
+        {{~ pk_name = "Id" ~}}
+        {{~ for prop in properties ~}}
+            {{~ if prop.is_primary_key ~}}{{~ pk_name = prop.name ~}}{{~ end ~}}
+        {{~ end ~}}
+        builder.HasKey(x => x.{{ pk_name }});
 
 {{~ for prop in properties ~}}
     {{~ if prop.is_navigation_property && !prop.is_primitive_type ~}}

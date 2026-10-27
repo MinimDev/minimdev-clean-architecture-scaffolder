@@ -26,16 +26,45 @@
         }
     </div>
 
-    <!-- Entity List -->
-    <div class="sidebar-section" style="margin-top:4px">Entities (@State.Entities.Count)</div>
+    <!-- Entity List Header & Search -->
+    <div style="padding: 6px 10px 4px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+            <span class="sidebar-section" style="padding:0">Entities</span>
+            <span style="font-size:10px; font-weight:700; color:var(--accent-bright); background:var(--accent-glow); padding:1px 6px; border-radius:99px;">
+                @(FilteredEntities.Count()) / @State.Entities.Count
+            </span>
+        </div>
+        <div style="position:relative;">
+            <input class="sidebar-search-input"
+                   placeholder="🔍 Filter entities..."
+                   value="@_searchQuery"
+                   @oninput="ev => _searchQuery = ev.Value?.ToString() ?? string.Empty" />
+            @if (!string.IsNullOrEmpty(_searchQuery))
+            {
+                <button @onclick="() => _searchQuery = string.Empty"
+                        style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11px;">✕</button>
+            }
+        </div>
+    </div>
+
     <div class="entity-list">
-        @foreach (var entity in State.Entities)
+        @foreach (var entity in FilteredEntities)
         {
             <div class="entity-item @(State.ActiveEntity == entity ? "active" : "")"
                  @onclick="() => State.SetActiveEntity(entity)">
-                <div>
-                    <div class="entity-name">
-                        @(string.IsNullOrWhiteSpace(entity.EntityName) ? "(unnamed)" : entity.EntityName)
+                <div style="min-width:0; flex:1;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="entity-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            @(string.IsNullOrWhiteSpace(entity.EntityName) ? "(unnamed)" : entity.EntityName)
+                        </span>
+                        @if (entity.IsFromWorkspace)
+                        {
+                            <span class="badge-source badge-workspace" title="Loaded from workspace Domain/Entities">WS</span>
+                        }
+                        else
+                        {
+                            <span class="badge-source badge-draft" title="Draft / New Entity">NEW</span>
+                        }
                     </div>
                     <div class="entity-props">@entity.Properties.Count props</div>
                 </div>
@@ -45,10 +74,10 @@
                         title="Remove entity">✕</button>
             </div>
         }
-        @if (!State.Entities.Any())
+        @if (!FilteredEntities.Any())
         {
             <div style="padding:20px 10px;color:var(--text-muted);font-size:11px;text-align:center;line-height:1.7">
-                No entities yet.<br/>Click below to add one.
+                @(string.IsNullOrEmpty(_searchQuery) ? "No entities yet.\nClick below to add one." : "No matching entities found.")
             </div>
         }
     </div>
@@ -62,6 +91,14 @@
 
 @code {
     private bool _isScanning = false;
+    private string _searchQuery = string.Empty;
+
+    private IEnumerable<EntityModel> FilteredEntities =>
+        string.IsNullOrWhiteSpace(_searchQuery)
+            ? State.Entities
+            : State.Entities.Where(e =>
+                e.EntityName.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                (e.TableName != null && e.TableName.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)));
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,6 +150,7 @@
                 var parsed = EntityParser.ParseEntity(content);
                 if (parsed != null && !string.IsNullOrWhiteSpace(parsed.EntityName) && parsed.EntityName != "Entity")
                 {
+                    parsed.IsFromWorkspace = true;
                     existingEntities.Add(parsed);
                 }
             }

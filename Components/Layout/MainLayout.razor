@@ -1,7 +1,8 @@
 @inherits LayoutComponentBase
 @inject AppState State
+@implements IDisposable
 
-<div class="app-shell">
+<div class="app-shell" data-theme="@_theme">
     <!-- ── Header ── -->
     <header class="app-header">
         <div class="logo">
@@ -12,7 +13,16 @@
         {
             <span class="header-badge">📦 @State.RootNamespace</span>
         }
+        <span class="header-badge" style="background:transparent; border-color:var(--border); color:var(--text-muted)">
+            Entities: @State.Entities.Count
+        </span>
+        
         <div class="header-spacer"></div>
+
+        <button class="theme-toggle-btn" @onclick="ToggleTheme" title="Toggle Theme (Dark / Light)">
+            @(_theme == "dark" ? "🌙 Dark" : "☀️ Light")
+        </button>
+
         <span class="header-badge">.NET Clean Architecture</span>
     </header>
 
@@ -27,3 +37,25 @@
     <!-- ── Right Panel ── -->
     <LayerSelector />
 </div>
+
+@code {
+    private string _theme = "dark";
+
+    protected override void OnInitialized()
+    {
+        _theme = Microsoft.Maui.Storage.Preferences.Default.Get("AppTheme", "dark");
+        State.OnStateChanged += StateHasChanged;
+    }
+
+    private void ToggleTheme()
+    {
+        _theme = _theme == "dark" ? "light" : "dark";
+        Microsoft.Maui.Storage.Preferences.Default.Set("AppTheme", _theme);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        State.OnStateChanged -= StateHasChanged;
+    }
+}

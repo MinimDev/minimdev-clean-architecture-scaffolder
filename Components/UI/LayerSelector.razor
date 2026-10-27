@@ -7,141 +7,225 @@
 @implements IDisposable
 
 <div class="layer-selector">
-    <!-- Layer Checkboxes -->
-    <div class="panel-section" style="overflow-y:auto;flex:1;min-height:0">
-        <div class="panel-section-title">Generate Layers</div>
-
-        <div class="layer-group">
-            <div class="layer-group-title">🏛 Domain</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-entity" @bind="_opts.GenerateDomainEntity" />
-                <label for="chk-entity">Entity class</label>
-                <span class="layer-file">Domain/Entities/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-errors" @bind="_opts.GenerateDomainErrors" />
-                <label for="chk-errors">Domain Errors</label>
-                <span class="layer-file">Domain/Errors/</span>
-            </div>
+    <!-- Presets Bar -->
+    <div class="panel-section" style="padding:10px 14px 6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="panel-section-title" style="margin-bottom:0;">Generate Layers</span>
+            <span style="font-size:10px; color:var(--text-muted);">@TotalActiveCount active</span>
         </div>
-
-        <div class="layer-group" style="margin-top:8px">
-            <div class="layer-group-title">⚙️ Application (CQRS)</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-irepo" @bind="_opts.GenerateDomainRepository" />
-                <label for="chk-irepo">IRepository Interface</label>
-                <span class="layer-file">Common/Interfaces/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-cmd-create" @bind="_opts.GenerateCreateCommand" />
-                <label for="chk-cmd-create">Create Command</label>
-                <span class="layer-file">Commands/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-cmd-update" @bind="_opts.GenerateUpdateCommand" />
-                <label for="chk-cmd-update">Update Command</label>
-                <span class="layer-file">Commands/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-cmd-delete" @bind="_opts.GenerateDeleteCommand" />
-                <label for="chk-cmd-delete">Delete Command</label>
-                <span class="layer-file">Commands/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-qry-getall" @bind="_opts.GenerateGetAllQuery" />
-                <label for="chk-qry-getall">GetAll Query</label>
-                <span class="layer-file">Queries/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-qry-getbyid" @bind="_opts.GenerateGetByIdQuery" />
-                <label for="chk-qry-getbyid">GetById Query</label>
-                <span class="layer-file">Queries/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-mapster" @bind="_opts.GenerateMappingConfig" />
-                <label for="chk-mapster">Mapster Config</label>
-                <span class="layer-file">Mappings/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-perms" @bind="_opts.GeneratePermissions" />
-                <label for="chk-perms">Permissions PBAC</label>
-                <span class="layer-file" style="color:var(--accent-cyan)">Permissions.cs</span>
-            </div>
-        </div>
-
-        <div class="layer-group" style="margin-top:8px">
-            <div class="layer-group-title">💾 Persistence</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-efcfg" @bind="_opts.GeneratePersistenceConfig" />
-                <label for="chk-efcfg">EF Configuration</label>
-                <span class="layer-file">Configurations/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-repo" @bind="_opts.GeneratePersistenceRepository" />
-                <label for="chk-repo">Repository Impl</label>
-                <span class="layer-file">Repositories/</span>
-            </div>
-        </div>
-
-        <div class="layer-group" style="margin-top:8px">
-            <div class="layer-group-title">🌐 WebAPI</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-ctrl" @bind="_opts.GenerateController" />
-                <label for="chk-ctrl">REST Controller</label>
-                <span class="layer-file">Controllers/</span>
-            </div>
-            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateController ? "1" : "0.5")">
-                <input type="checkbox" id="chk-auth" @bind="_opts.RequireAuthorization" disabled="@(!_opts.GenerateController)" />
-                <label for="chk-auth">PBAC [HasPermission]</label>
-                <span class="layer-file">Security</span>
-            </div>
-        </div>
-
-        <div class="layer-group" style="margin-top:8px">
-            <div class="layer-group-title">🖥️ WebUI (MudBlazor)</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-webui-client" @bind="_opts.GenerateWebUIClient" />
-                <label for="chk-webui-client">Typed API Client</label>
-                <span class="layer-file">Services/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-webui-models" @bind="_opts.GenerateWebUIModels" />
-                <label for="chk-webui-models">Client DTOs</label>
-                <span class="layer-file">Services/Models/</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-webui-pages" @bind="_opts.GenerateWebUIPages" />
-                <label for="chk-webui-pages">CRUD Pages & Dialogs</label>
-                <span class="layer-file">Components/Pages/</span>
-            </div>
-            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIClient ? "1" : "0.5")">
-                <input type="checkbox" id="chk-webui-di" @bind="_opts.InjectWebUIDependencies" disabled="@(!_opts.GenerateWebUIClient)" />
-                <label for="chk-webui-di">Register DI in Program.cs</label>
-                <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
-            </div>
-            <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIPages ? "1" : "0.5")">
-                <input type="checkbox" id="chk-webui-nav" @bind="_opts.InjectNavMenu" disabled="@(!_opts.GenerateWebUIPages)" />
-                <label for="chk-webui-nav">Add NavMenu Link</label>
-                <span class="layer-file" style="color:var(--accent-cyan)">(Nav)</span>
-            </div>
-        </div>
-
-        <div class="layer-group" style="margin-top:8px">
-            <div class="layer-group-title">🛠 Post-Scaffold Actions</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-overwrite" @bind="_overwriteExisting" />
-                <label for="chk-overwrite">Overwrite Existing Files</label>
-                <span class="layer-file" style="color:var(--accent-orange)">(Danger)</span>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk-injectdb" @bind="_opts.InjectDbContext" />
-                <label for="chk-injectdb">Inject DbSet&lt;T&gt;</label>
-                <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
-            </div>
+        <div class="preset-bar">
+            <button class="preset-chip" @onclick="SelectFullStack" title="Full-Stack Clean Architecture + MudBlazor">⚡ Full-Stack</button>
+            <button class="preset-chip" @onclick="SelectBackendOnly" title="Domain + App + Persistence + WebAPI">⚙️ Backend</button>
+            <button class="preset-chip" @onclick="SelectWebUIOnly" title="MudBlazor Client & Pages Only">🖥️ WebUI</button>
+            <button class="preset-chip" @onclick="ClearAll" title="Clear all selections">🧹 Clear</button>
         </div>
     </div>
 
-    <!-- Scaffold Button -->
+    <!-- Layer Checkboxes with Accordions -->
+    <div class="panel-section" style="overflow-y:auto;flex:1;min-height:0;padding:6px 14px;">
+        <!-- Domain Accordion -->
+        <div class="layer-group">
+            <div class="layer-group-header" @onclick="() => _expandDomain = !_expandDomain">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandDomain ? "▼" : "▶")</span>
+                    <span class="layer-group-title">🏛 Domain</span>
+                </div>
+                <span class="layer-count-badge @(DomainActiveCount > 0 ? "active" : "")">@DomainActiveCount/2</span>
+            </div>
+            @if (_expandDomain)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-entity" @bind="_opts.GenerateDomainEntity" />
+                        <label for="chk-entity">Entity class</label>
+                        <span class="layer-file">Entities/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-errors" @bind="_opts.GenerateDomainErrors" />
+                        <label for="chk-errors">Domain Errors</label>
+                        <span class="layer-file">Errors/</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Application Accordion -->
+        <div class="layer-group" style="margin-top:4px">
+            <div class="layer-group-header" @onclick="() => _expandApp = !_expandApp">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandApp ? "▼" : "▶")</span>
+                    <span class="layer-group-title">⚙️ Application (CQRS)</span>
+                </div>
+                <span class="layer-count-badge @(AppActiveCount > 0 ? "active" : "")">@AppActiveCount/8</span>
+            </div>
+            @if (_expandApp)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-irepo" @bind="_opts.GenerateDomainRepository" />
+                        <label for="chk-irepo">IRepository Interface</label>
+                        <span class="layer-file">Interfaces/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-cmd-create" @bind="_opts.GenerateCreateCommand" />
+                        <label for="chk-cmd-create">Create Command</label>
+                        <span class="layer-file">Commands/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-cmd-update" @bind="_opts.GenerateUpdateCommand" />
+                        <label for="chk-cmd-update">Update Command</label>
+                        <span class="layer-file">Commands/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-cmd-delete" @bind="_opts.GenerateDeleteCommand" />
+                        <label for="chk-cmd-delete">Delete Command</label>
+                        <span class="layer-file">Commands/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-qry-getall" @bind="_opts.GenerateGetAllQuery" />
+                        <label for="chk-qry-getall">GetAll Query</label>
+                        <span class="layer-file">Queries/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-qry-getbyid" @bind="_opts.GenerateGetByIdQuery" />
+                        <label for="chk-qry-getbyid">GetById Query</label>
+                        <span class="layer-file">Queries/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-mapster" @bind="_opts.GenerateMappingConfig" />
+                        <label for="chk-mapster">Mapster Config</label>
+                        <span class="layer-file">Mappings/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-perms" @bind="_opts.GeneratePermissions" />
+                        <label for="chk-perms">Permissions PBAC</label>
+                        <span class="layer-file" style="color:var(--accent-cyan)">Permissions.cs</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Persistence Accordion -->
+        <div class="layer-group" style="margin-top:4px">
+            <div class="layer-group-header" @onclick="() => _expandPersistence = !_expandPersistence">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandPersistence ? "▼" : "▶")</span>
+                    <span class="layer-group-title">💾 Persistence</span>
+                </div>
+                <span class="layer-count-badge @(PersistenceActiveCount > 0 ? "active" : "")">@PersistenceActiveCount/2</span>
+            </div>
+            @if (_expandPersistence)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-efcfg" @bind="_opts.GeneratePersistenceConfig" />
+                        <label for="chk-efcfg">EF Configuration</label>
+                        <span class="layer-file">Configurations/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-repo" @bind="_opts.GeneratePersistenceRepository" />
+                        <label for="chk-repo">Repository Impl</label>
+                        <span class="layer-file">Repositories/</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- WebAPI Accordion -->
+        <div class="layer-group" style="margin-top:4px">
+            <div class="layer-group-header" @onclick="() => _expandWebApi = !_expandWebApi">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandWebApi ? "▼" : "▶")</span>
+                    <span class="layer-group-title">🌐 WebAPI</span>
+                </div>
+                <span class="layer-count-badge @(WebApiActiveCount > 0 ? "active" : "")">@WebApiActiveCount/2</span>
+            </div>
+            @if (_expandWebApi)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-ctrl" @bind="_opts.GenerateController" />
+                        <label for="chk-ctrl">REST Controller</label>
+                        <span class="layer-file">Controllers/</span>
+                    </div>
+                    <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateController ? "1" : "0.5")">
+                        <input type="checkbox" id="chk-auth" @bind="_opts.RequireAuthorization" disabled="@(!_opts.GenerateController)" />
+                        <label for="chk-auth">PBAC [HasPermission]</label>
+                        <span class="layer-file">Security</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- WebUI Accordion -->
+        <div class="layer-group" style="margin-top:4px">
+            <div class="layer-group-header" @onclick="() => _expandWebUi = !_expandWebUi">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandWebUi ? "▼" : "▶")</span>
+                    <span class="layer-group-title">🖥️ WebUI (MudBlazor)</span>
+                </div>
+                <span class="layer-count-badge @(WebUiActiveCount > 0 ? "active" : "")">@WebUiActiveCount/5</span>
+            </div>
+            @if (_expandWebUi)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-webui-client" @bind="_opts.GenerateWebUIClient" />
+                        <label for="chk-webui-client">Typed API Client</label>
+                        <span class="layer-file">Services/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-webui-models" @bind="_opts.GenerateWebUIModels" />
+                        <label for="chk-webui-models">Client DTOs</label>
+                        <span class="layer-file">Models/</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-webui-pages" @bind="_opts.GenerateWebUIPages" />
+                        <label for="chk-webui-pages">CRUD Pages & Dialogs</label>
+                        <span class="layer-file">Pages/</span>
+                    </div>
+                    <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIClient ? "1" : "0.5")">
+                        <input type="checkbox" id="chk-webui-di" @bind="_opts.InjectWebUIDependencies" disabled="@(!_opts.GenerateWebUIClient)" />
+                        <label for="chk-webui-di">Register DI in Program.cs</label>
+                        <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
+                    </div>
+                    <div class="layer-item" style="padding-left:24px; opacity: @(_opts.GenerateWebUIPages ? "1" : "0.5")">
+                        <input type="checkbox" id="chk-webui-nav" @bind="_opts.InjectNavMenu" disabled="@(!_opts.GenerateWebUIPages)" />
+                        <label for="chk-webui-nav">Add NavMenu Link</label>
+                        <span class="layer-file" style="color:var(--accent-cyan)">(Nav)</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Post-Scaffold Accordion -->
+        <div class="layer-group" style="margin-top:4px">
+            <div class="layer-group-header" @onclick="() => _expandPostScaffold = !_expandPostScaffold">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="accordion-arrow">@(_expandPostScaffold ? "▼" : "▶")</span>
+                    <span class="layer-group-title">🛠 Post-Scaffold Actions</span>
+                </div>
+                <span class="layer-count-badge">@PostScaffoldActiveCount/2</span>
+            </div>
+            @if (_expandPostScaffold)
+            {
+                <div class="layer-group-body">
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-overwrite" @bind="_overwriteExisting" />
+                        <label for="chk-overwrite">Overwrite Existing Files</label>
+                        <span class="layer-file" style="color:var(--accent-orange)">(Danger)</span>
+                    </div>
+                    <div class="layer-item">
+                        <input type="checkbox" id="chk-injectdb" @bind="_opts.InjectDbContext" />
+                        <label for="chk-injectdb">Inject DbSet&lt;T&gt;</label>
+                        <span class="layer-file" style="color:var(--accent-orange)">(Roslyn)</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Scaffold Action Button -->
     <button class="scaffold-btn"
             @onclick="RequestScaffold"
             disabled="@(_isRunning || State.ActiveEntity is null
@@ -159,10 +243,13 @@
     </button>
 
     <!-- Terminal Log -->
-    <div style="padding:8px 14px 4px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">
-            Terminal Log
-        </span>
+    <div style="padding:6px 14px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" @onclick="() => _isTerminalExpanded = !_isTerminalExpanded">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">
+                Terminal Log (@_logs.Count)
+            </span>
+            <span style="font-size:9px; color:var(--text-muted);">@(_isTerminalExpanded ? "▼" : "▲")</span>
+        </div>
         @if (_logs.Any())
         {
             <button @onclick="() => _logs.Clear()"
@@ -172,24 +259,27 @@
         }
     </div>
 
-    <div class="terminal-wrap">
-        <div class="terminal-body">
-            @if (!_logs.Any())
-            {
-                <div class="log-line log-info">
-                    <span class="log-icon">📋</span>
-                    <span class="log-path">Ready. Configure an entity and click Scaffold.</span>
-                </div>
-            }
-            @foreach (var log in _logs)
-            {
-                <div class="log-line @log.CssClass">
-                    <span class="log-icon">@log.Icon</span>
-                    <span class="log-path">@log.Message</span>
-                </div>
-            }
+    @if (_isTerminalExpanded)
+    {
+        <div class="terminal-wrap">
+            <div class="terminal-body">
+                @if (!_logs.Any())
+                {
+                    <div class="log-line log-info">
+                        <span class="log-icon">📋</span>
+                        <span class="log-path">Ready. Configure entity and layers, then click Scaffold.</span>
+                    </div>
+                }
+                @foreach (var log in _logs)
+                {
+                    <div class="log-line @log.CssClass">
+                        <span class="log-icon">@log.Icon</span>
+                        <span class="log-path">@log.Message</span>
+                    </div>
+                }
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 <!-- Scaffold Confirmation Modal -->
@@ -220,8 +310,103 @@
     private bool _overwriteExisting = true;
     private List<LogEntry> _logs = new();
 
+    private bool _expandDomain = true;
+    private bool _expandApp = true;
+    private bool _expandPersistence = true;
+    private bool _expandWebApi = true;
+    private bool _expandWebUi = true;
+    private bool _expandPostScaffold = false;
+    private bool _isTerminalExpanded = true;
+
+    private int DomainActiveCount => (_opts.GenerateDomainEntity ? 1 : 0) + (_opts.GenerateDomainErrors ? 1 : 0);
+    private int AppActiveCount => (_opts.GenerateDomainRepository ? 1 : 0) +
+                                  (_opts.GenerateCreateCommand ? 1 : 0) +
+                                  (_opts.GenerateUpdateCommand ? 1 : 0) +
+                                  (_opts.GenerateDeleteCommand ? 1 : 0) +
+                                  (_opts.GenerateGetAllQuery ? 1 : 0) +
+                                  (_opts.GenerateGetByIdQuery ? 1 : 0) +
+                                  (_opts.GenerateMappingConfig ? 1 : 0) +
+                                  (_opts.GeneratePermissions ? 1 : 0);
+    private int PersistenceActiveCount => (_opts.GeneratePersistenceConfig ? 1 : 0) + (_opts.GeneratePersistenceRepository ? 1 : 0);
+    private int WebApiActiveCount => (_opts.GenerateController ? 1 : 0) + (_opts.RequireAuthorization ? 1 : 0);
+    private int WebUiActiveCount => (_opts.GenerateWebUIClient ? 1 : 0) +
+                                    (_opts.GenerateWebUIModels ? 1 : 0) +
+                                    (_opts.GenerateWebUIPages ? 1 : 0) +
+                                    (_opts.InjectWebUIDependencies ? 1 : 0) +
+                                    (_opts.InjectNavMenu ? 1 : 0);
+    private int PostScaffoldActiveCount => (_overwriteExisting ? 1 : 0) + (_opts.InjectDbContext ? 1 : 0);
+    private int TotalActiveCount => DomainActiveCount + AppActiveCount + PersistenceActiveCount + WebApiActiveCount + WebUiActiveCount;
+
     protected override void OnInitialized()
         => State.OnStateChanged += StateHasChanged;
+
+    private void SelectFullStack()
+    {
+        _opts.GenerateDomainEntity = true;
+        _opts.GenerateDomainErrors = true;
+        _opts.GenerateDomainRepository = true;
+        _opts.GenerateCreateCommand = true;
+        _opts.GenerateUpdateCommand = true;
+        _opts.GenerateDeleteCommand = true;
+        _opts.GenerateGetAllQuery = true;
+        _opts.GenerateGetByIdQuery = true;
+        _opts.GenerateMappingConfig = true;
+        _opts.GeneratePermissions = true;
+        _opts.GeneratePersistenceConfig = true;
+        _opts.GeneratePersistenceRepository = true;
+        _opts.GenerateController = true;
+        _opts.RequireAuthorization = true;
+        _opts.GenerateWebUIClient = true;
+        _opts.GenerateWebUIModels = true;
+        _opts.GenerateWebUIPages = true;
+        _opts.InjectWebUIDependencies = true;
+        _opts.InjectNavMenu = true;
+        _opts.InjectDbContext = true;
+    }
+
+    private void SelectBackendOnly()
+    {
+        SelectFullStack();
+        _opts.GenerateWebUIClient = false;
+        _opts.GenerateWebUIModels = false;
+        _opts.GenerateWebUIPages = false;
+        _opts.InjectWebUIDependencies = false;
+        _opts.InjectNavMenu = false;
+    }
+
+    private void SelectWebUIOnly()
+    {
+        ClearAll();
+        _opts.GenerateWebUIClient = true;
+        _opts.GenerateWebUIModels = true;
+        _opts.GenerateWebUIPages = true;
+        _opts.InjectWebUIDependencies = true;
+        _opts.InjectNavMenu = true;
+    }
+
+    private void ClearAll()
+    {
+        _opts.GenerateDomainEntity = false;
+        _opts.GenerateDomainErrors = false;
+        _opts.GenerateDomainRepository = false;
+        _opts.GenerateCreateCommand = false;
+        _opts.GenerateUpdateCommand = false;
+        _opts.GenerateDeleteCommand = false;
+        _opts.GenerateGetAllQuery = false;
+        _opts.GenerateGetByIdQuery = false;
+        _opts.GenerateMappingConfig = false;
+        _opts.GeneratePermissions = false;
+        _opts.GeneratePersistenceConfig = false;
+        _opts.GeneratePersistenceRepository = false;
+        _opts.GenerateController = false;
+        _opts.RequireAuthorization = false;
+        _opts.GenerateWebUIClient = false;
+        _opts.GenerateWebUIModels = false;
+        _opts.GenerateWebUIPages = false;
+        _opts.InjectWebUIDependencies = false;
+        _opts.InjectNavMenu = false;
+        _opts.InjectDbContext = false;
+    }
 
     private void RequestScaffold()
     {
@@ -241,6 +426,7 @@
         if (State.ActiveEntity is null || string.IsNullOrEmpty(State.WorkspacePath)) return;
 
         _isRunning = true;
+        _isTerminalExpanded = true;
         _logs.Add(new("▶", $"Scaffolding '{State.ActiveEntity.EntityName}'...", "log-info"));
         StateHasChanged();
 

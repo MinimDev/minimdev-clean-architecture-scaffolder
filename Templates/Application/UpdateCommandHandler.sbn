@@ -4,6 +4,7 @@ using {{ root_namespace }}.Domain.Enums;
 using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Domain.Entities;
+using {{ root_namespace }}.Domain.Errors;
 using {{ root_namespace }}.Domain.Exceptions;
 using MediatR;
 
@@ -24,7 +25,7 @@ public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ en
         {
             var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
             if ({{ entity_name_camel }} == null)
-                return Result<Unit>.Failure("{{ entity_name }} not found");
+                return Result<Unit>.Failure({{ entity_name }}Errors.NotFound);
 
             {{ entity_name_camel }}.Update({{- for prop in entity_properties -}}
                 request.{{ prop.name }}{{ if !for.last }}, {{ end }}
@@ -51,5 +52,3 @@ public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ en
         }
     }
 }
-
-

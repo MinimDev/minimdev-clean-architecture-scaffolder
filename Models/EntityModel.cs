@@ -54,6 +54,77 @@ public class EntityModel
 
     public bool HasCustomTypes => Properties.Any(p => !PropertyModel.SupportedTypes.Contains(p.DataType));
 
+    public bool IsFromWorkspace { get; set; } = false;
+
+    public void MovePropertyUp(PropertyModel prop)
+    {
+        int index = Properties.IndexOf(prop);
+        if (index > 0)
+        {
+            Properties.RemoveAt(index);
+            Properties.Insert(index - 1, prop);
+        }
+    }
+
+    public void MovePropertyDown(PropertyModel prop)
+    {
+        int index = Properties.IndexOf(prop);
+        if (index >= 0 && index < Properties.Count - 1)
+        {
+            Properties.RemoveAt(index);
+            Properties.Insert(index + 1, prop);
+        }
+    }
+
+    public PropertyModel DuplicateProperty(PropertyModel prop)
+    {
+        var clone = new PropertyModel
+        {
+            Name = prop.Name + "Copy",
+            DataType = prop.DataType,
+            IsNullable = prop.IsNullable,
+            IsPrimaryKey = false,
+            HasPublicSetter = prop.HasPublicSetter,
+            IsNavigationProperty = prop.IsNavigationProperty,
+            RelationshipType = prop.RelationshipType,
+            ForeignKeyName = prop.ForeignKeyName,
+            PrincipalKeyName = prop.PrincipalKeyName,
+            MaxLength = prop.MaxLength,
+            Precision = prop.Precision,
+            Scale = prop.Scale
+        };
+        int index = Properties.IndexOf(prop);
+        if (index >= 0)
+            Properties.Insert(index + 1, clone);
+        else
+            Properties.Add(clone);
+        return clone;
+    }
+
+    public void AddAuditFields()
+    {
+        if (!Properties.Any(p => p.Name.Equals("CreatedAtUtc", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "CreatedAtUtc", DataType = "DateTime", IsNullable = false });
+        if (!Properties.Any(p => p.Name.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "CreatedBy", DataType = "string", IsNullable = true, MaxLength = 100 });
+        if (!Properties.Any(p => p.Name.Equals("LastModifiedAtUtc", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "LastModifiedAtUtc", DataType = "DateTime", IsNullable = true });
+        if (!Properties.Any(p => p.Name.Equals("LastModifiedBy", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "LastModifiedBy", DataType = "string", IsNullable = true, MaxLength = 100 });
+    }
+
+    public void AddMasterFields()
+    {
+        if (!Properties.Any(p => p.Name.Equals("Code", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "Code", DataType = "string", IsNullable = false, MaxLength = 50 });
+        if (!Properties.Any(p => p.Name.Equals("Name", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "Name", DataType = "string", IsNullable = false, MaxLength = 150 });
+        if (!Properties.Any(p => p.Name.Equals("Description", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "Description", DataType = "string", IsNullable = true, MaxLength = 500 });
+        if (!Properties.Any(p => p.Name.Equals("IsActive", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "IsActive", DataType = "bool", IsNullable = false });
+    }
+
     public void SyncTableName()
     {
         if (string.IsNullOrWhiteSpace(TableName))
