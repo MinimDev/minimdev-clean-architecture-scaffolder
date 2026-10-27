@@ -79,9 +79,13 @@ public class {{ entity_name_plural }}Client
     {
         try
         {
-            using var response = await _httpClient.PostAsJsonAsync("api/v1/{{ entity_name_plural }}", command);
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/{{ entity_name_plural }}");
+            request.Content = JsonContent.Create(command);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString());
+
+            using var response = await _httpClient.SendAsync(request);
             var result = await response.Content.ReadFromJsonAsync<Result<Guid>>();
-            return result ?? new Result<Guid> { IsSuccess = false, Error = "Empty response from server" };
+            return result ?? new Result<Guid> { IsSuccess = false, Error = "No response from server" };
         }
         catch (Exception ex)
         {
@@ -89,31 +93,40 @@ public class {{ entity_name_plural }}Client
         }
     }
 
-    public async Task<Result<bool>> Update{{ entity_name }}Async(Guid id, Update{{ entity_name }}Dto dto)
+    public async Task<Result> Update{{ entity_name }}Async(Guid id, Update{{ entity_name }}Dto dto)
     {
         try
         {
-            using var response = await _httpClient.PutAsJsonAsync($"api/v1/{{ entity_name_plural }}/{id}", dto);
-            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
-            return result ?? new Result<bool> { IsSuccess = false, Error = "Empty response from server" };
+            using var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/{{ entity_name_plural }}/{id}");
+            request.Content = JsonContent.Create(dto);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString());
+
+            using var response = await _httpClient.SendAsync(request);
+            if (response.IsSuccessStatusCode) return Result.Success();
+            var error = await response.Content.ReadAsStringAsync();
+            return Result.Failure(error);
         }
         catch (Exception ex)
         {
-            return new Result<bool> { IsSuccess = false, Error = ex.Message };
+            return Result.Failure(ex.Message);
         }
     }
 
-    public async Task<Result<bool>> Delete{{ entity_name }}Async(Guid id)
+    public async Task<Result> Delete{{ entity_name }}Async(Guid id)
     {
         try
         {
-            using var response = await _httpClient.DeleteAsync($"api/v1/{{ entity_name_plural }}/{id}");
-            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
-            return result ?? new Result<bool> { IsSuccess = false, Error = "Empty response from server" };
+            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/{{ entity_name_plural }}/{id}");
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString());
+
+            using var response = await _httpClient.SendAsync(request);
+            if (response.IsSuccessStatusCode) return Result.Success();
+            var error = await response.Content.ReadAsStringAsync();
+            return Result.Failure(error);
         }
         catch (Exception ex)
         {
-            return new Result<bool> { IsSuccess = false, Error = ex.Message };
+            return Result.Failure(ex.Message);
         }
     }
 }

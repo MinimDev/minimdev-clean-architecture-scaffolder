@@ -17,7 +17,7 @@
                     <MudPaper Elevation="0" Class="pa-3 rounded-lg" Style="background-color: var(--mud-palette-background-grey);">
                         <MudText Typo="Typo.caption" Color="Color.Secondary" Class="font-weight-medium text-uppercase mb-1">{{ prop.name }}</MudText>
                         <MudText Typo="Typo.body2" Class="font-weight-bold">
-                            @(Item.{{ prop.name }}?.ToString() ?? "—")
+                            {{ if prop.is_nullable }}@(Item.{{ prop.name }}?.ToString() ?? "—"){{ else }}@Item.{{ prop.name }}{{ end }}
                         </MudText>
                     </MudPaper>
                 </MudItem>
