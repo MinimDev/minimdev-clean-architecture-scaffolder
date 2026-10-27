@@ -135,14 +135,11 @@ public class EntityParserService
                 else if (!PropertyModel.SupportedTypes.Contains(propertyModel.DataType))
                 {
                     // Jika bukan tipe standar yang didukung, bisa jadi enum atau relasi ManyToOne/OneToOne.
-                    // Secara default kita biarkan user menyesuaikan via UI nanti, tapi kita tandai jika bentuknya PascalCase.
                     if (!string.IsNullOrEmpty(propertyModel.DataType) && char.IsUpper(propertyModel.DataType[0]))
                     {
-                        // Anggap sebagai relasi ManyToOne by default (bisa diubah di UI)
                         propertyModel.IsNavigationProperty = true;
                         propertyModel.RelationshipType = "ManyToOne";
                     }
-                    PropertyModel.SupportedTypes.Add(propertyModel.DataType);
                 }
 
                 entity.Properties.Add(propertyModel);
