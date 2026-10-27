@@ -18,10 +18,8 @@ public class Update{{ entity_name }}CommandValidator : AbstractValidator<Update{
 {{~ for prop in dto_properties ~}}
         {{~ if !prop.is_nullable && prop.data_type == "string" ~}}
         RuleFor(v => v.{{ prop.name }})
-            .NotEmpty().WithMessage("{{ prop.name }} is required.")
-            {{~ if prop.max_length ~}}
-            .MaximumLength({{ prop.max_length }}).WithMessage("{{ prop.name }} must not exceed {{ prop.max_length }} characters.");
-            {{~ end ~}}
+            .NotEmpty().WithMessage("{{ prop.name }} is required."){{ if prop.max_length }}
+            .MaximumLength({{ prop.max_length }}).WithMessage("{{ prop.name }} must not exceed {{ prop.max_length }} characters.");{{ else }};{{ end }}
         {{~ else if !prop.is_nullable && (prop.data_type == "int" || prop.data_type == "decimal" || prop.data_type == "double" || prop.data_type == "float" || prop.data_type == "long") ~}}
         RuleFor(v => v.{{ prop.name }})
             .GreaterThanOrEqualTo(0).WithMessage("{{ prop.name }} must be greater than or equal to 0.");
