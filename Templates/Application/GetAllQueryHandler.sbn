@@ -3,9 +3,9 @@ using {{ root_namespace }}.Domain.Enums;
 {{~ end ~}}
 using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
-using {{ root_namespace }}.Domain.Entities;
 using Mapster;
-using MediatR;
+using Mediator;
+using Microsoft.EntityFrameworkCore;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
 
@@ -14,28 +14,45 @@ namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Que
 /// </summary>
 public class GetAll{{ entity_name_plural }}QueryHandler : IRequestHandler<GetAll{{ entity_name_plural }}Query, Result<PaginatedList<{{ entity_name }}Dto>>>
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IApplicationDbContext _context;
 
-    public GetAll{{ entity_name_plural }}QueryHandler(IUnitOfWork unitOfWork)
+    public GetAll{{ entity_name_plural }}QueryHandler(IApplicationDbContext context)
     {
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
 
-    public async Task<Result<PaginatedList<{{ entity_name }}Dto>>> Handle(GetAll{{ entity_name_plural }}Query request, CancellationToken cancellationToken)
+    public async ValueTask<Result<PaginatedList<{{ entity_name }}Dto>>> Handle(GetAll{{ entity_name_plural }}Query request, CancellationToken cancellationToken)
     {
         try
         {
-            var {{ entity_name_camel }}s = await _unitOfWork.Repository<{{ entity_name }}>().GetAllAsync(cancellationToken);
-            
-            var totalCount = {{ entity_name_camel }}s.Count;
-            var pagedEntities = {{ entity_name_camel }}s
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToList();
+            var query = _context.{{ entity_name_plural }}.AsQueryable();
 
-            var response = pagedEntities.Adapt<List<{{ entity_name }}Dto>>();
-            var paginatedList = new PaginatedList<{{ entity_name }}Dto>(response, totalCount, request.PageNumber, request.PageSize);
-            
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var searchTerm = request.SearchTerm.ToLower();
+                {{~ string_props = [] ~}}
+                {{~ for prop in dto_properties ~}}
+                    {{~ if prop.data_type == "string" ~}}
+                        {{~ string_props = string_props | array.add prop.name ~}}
+                    {{~ end ~}}
+                {{~ end ~}}
+                {{~ if (string_props | array.size) > 0 ~}}
+                query = query.Where(p => 
+                    {{~ for sp in string_props ~}}
+                    (p.{{ sp }} != null && p.{{ sp }}.ToLower().Contains(searchTerm)){{ if !for.last }} ||{{ end }}
+                    {{~ end ~}}
+                );
+                {{~ end ~}}
+            }
+
+            var dtos = query.ProjectToType<{{ entity_name }}Dto>();
+
+            var paginatedList = await PaginatedList<{{ entity_name }}Dto>.CreateAsync(
+                dtos,
+                request.PageNumber,
+                request.PageSize
+            );
+
             return Result<PaginatedList<{{ entity_name }}Dto>>.Success(paginatedList);
         }
         catch (Exception ex)

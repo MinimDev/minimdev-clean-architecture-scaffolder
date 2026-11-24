@@ -4,13 +4,12 @@ using {{ root_namespace }}.Domain.Enums;
 using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Domain.Entities;
-using {{ root_namespace }}.Domain.Errors;
 using {{ root_namespace }}.Domain.Exceptions;
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Update{{ entity_name }};
 
-public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ entity_name }}Command, Result<Unit>>
+public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ entity_name }}Command, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
 
@@ -19,13 +18,15 @@ public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ en
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<Unit>> Handle(Update{{ entity_name }}Command request, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(Update{{ entity_name }}Command request, CancellationToken cancellationToken)
     {
         try
         {
-            var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
+            var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id, cancellationToken);
             if ({{ entity_name_camel }} == null)
-                return Result<Unit>.Failure({{ entity_name }}Errors.NotFound);
+            {
+                return Result.Failure($"{{ entity_name }} with ID {request.Id} not found.");
+            }
 
             {{ entity_name_camel }}.Update({{- for prop in entity_properties -}}
                 request.{{ prop.name }}{{ if !for.last }}, {{ end }}
@@ -40,15 +41,15 @@ public class Update{{ entity_name }}CommandHandler : IRequestHandler<Update{{ en
             _unitOfWork.Repository<{{ entity_name }}>().Update({{ entity_name_camel }});
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Result<Unit>.Success(Unit.Value);
+            return Result.Success();
         }
         catch (DomainException ex)
         {
-            return Result<Unit>.Failure(ex.Message);
+            return Result.Failure(ex.Message);
         }
         catch (Exception ex)
         {
-            return Result<Unit>.Failure($"An error occurred while updating the {{ entity_name | string.downcase }}: {ex.Message}");
+            return Result.Failure($"An error occurred while updating the {{ entity_name | string.downcase }}: {ex.Message}");
         }
     }
 }

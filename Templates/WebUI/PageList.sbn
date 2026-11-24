@@ -9,7 +9,7 @@
 <AuthorizeView>
     <Authorized>
         <div class="page-container pa-4">
-            <!-- Header Section -->
+            <!-- Header Section using PageHeader Shared Component -->
             <PageHeader Title="{{ entity_name_plural }}"
                         Subtitle="Browse, search, and manage {{ entity_name_plural | string.downcase }}"
                         Icon="@Icons.Material.Rounded.{{ icon_name }}"
@@ -22,7 +22,7 @@
                                       Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                       Class="rounded-lg bg-surface" Style="min-width: 200px; max-width: 280px; font-size: 0.85rem;" />
 
-                        <!-- View Switcher -->
+                        <!-- View Switcher: Grid vs Table -->
                         <div class="d-flex align-center border-solid border-1 rounded-lg overflow-hidden" style="border-color: var(--mud-palette-lines-default); background: var(--mud-palette-surface);">
                             <MudTooltip Text="Grid View">
                                 <MudIconButton Icon="@Icons.Material.Rounded.GridView"
@@ -43,8 +43,8 @@
                         @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Create))
                         {
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-                                       OnClick="OpenCreateDialog" Class="rounded-lg text-transform-none font-weight-bold shadow-sm"
-                                       Size="Size.Medium">
+                                       OnClick="OpenCreateDialog" Class="rounded-lg text-nowrap hover-lift px-3 py-1-5 font-weight-bold"
+                                       Size="Size.Small">
                                 New {{ entity_name }}
                             </MudButton>
                         }
@@ -52,98 +52,145 @@
                 </Actions>
             </PageHeader>
 
-            <!-- Main Content Area -->
+            <!-- Loading State -->
             @if (_isLoading)
             {
-                <TableSkeleton Rows="5" Columns="5" />
+                @if (_isTableView)
+                {
+                    <TableSkeleton Rows="8" Columns="5" />
+                }
+                else
+                {
+                    <MudGrid Spacing="3">
+                        @for (int i = 0; i < 8; i++)
+                        {
+                            <MudItem xs="12" sm="6" md="4" lg="3">
+                                <MudCard Elevation="0" Class="rounded-xl overflow-hidden border-solid border-1" Style="border-color: var(--mud-palette-lines-default);">
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100px" Animation="Animation.Wave" />
+                                    <MudCardContent Class="pa-3">
+                                        <MudSkeleton Width="75%" Height="24px" Class="mb-2" Animation="Animation.Wave" />
+                                        <MudSkeleton Width="40%" Height="20px" Class="mb-3" Animation="Animation.Wave" />
+                                        <MudSkeleton Width="100%" Height="14px" Animation="Animation.Wave" />
+                                    </MudCardContent>
+                                    <MudCardActions Class="pa-3 pt-0">
+                                        <MudSkeleton Width="48px" Height="28px" Class="ml-auto" Animation="Animation.Wave" />
+                                    </MudCardActions>
+                                </MudCard>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
             }
-            else if (!_items.Any())
+            else if (_items == null || !_items.Any())
             {
+                <!-- Empty State using Shared Component -->
                 <EmptyState Title="No {{ entity_name_plural }} Found"
-                            Description="@(!string.IsNullOrWhiteSpace(_searchString) ? "No matching records found for your search query." : "There are currently no records available. Create a new one to get started.")"
+                            Description="You haven't added any {{ entity_name_plural | string.downcase }} or none match your search criteria. Create your first {{ entity_name | string.downcase }} to get started!"
                             Icon="@Icons.Material.Rounded.{{ icon_name }}"
-                            ActionText="@(TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Create) ? "Create {{ entity_name }}" : null)"
-                            OnAction="OpenCreateDialog" />
+                            ActionText="@(TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Create) ? "Create Your First {{ entity_name }}" : null)"
+                            ActionIcon="@Icons.Material.Rounded.Add"
+                            OnActionClick="OpenCreateDialog" />
             }
             else if (_isTableView)
             {
-                <!-- Table View -->
-                <MudPaper Elevation="0" Class="rounded-xl border-solid border-1 overflow-hidden" Style="border-color: var(--mud-palette-lines-default);">
-                    <MudTable Items="_items" Hover="true" Elevation="0" Dense="true" Class="custom-mud-table">
-                        <HeaderContent>
+                <!-- DATA TABLE VIEW -->
+                <MudTable Items="_items" Elevation="0" Class="rounded-xl border-solid border-1 overflow-hidden"
+                          Style="border-color: var(--mud-palette-lines-default); background: var(--mud-palette-surface);"
+                          Dense="true" Hover="true">
+                    <HeaderContent>
 {{~ for prop in dto_properties ~}}
-                            <MudTh>{{ prop.name }}</MudTh>
+                        <MudTh>{{ prop.name }}</MudTh>
 {{~ end ~}}
-                            <MudTh Style="text-align: right; width: 140px;">Actions</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
+{{~ if use_base_entity ~}}
+                        <MudTh>Created</MudTh>
+{{~ end ~}}
+                        <MudTh Style="text-align: right; width: 140px;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
 {{~ for prop in dto_properties ~}}
-                            <MudTd DataLabel="{{ prop.name }}">@context.{{ prop.name }}</MudTd>
+                        <MudTd DataLabel="{{ prop.name }}">@context.{{ prop.name }}</MudTd>
 {{~ end ~}}
-                            <MudTd DataLabel="Actions" Style="text-align: right;">
-                                <div class="d-flex justify-end gap-1">
-                                    <MudTooltip Text="View Details">
-                                        <MudIconButton Icon="@Icons.Material.Rounded.Visibility" Size="Size.Small" OnClick="@(() => OpenDetailDialog(context))" />
+{{~ if use_base_entity ~}}
+                        <MudTd DataLabel="Created">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @context.CreatedAt.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </MudTd>
+{{~ end ~}}
+                        <MudTd DataLabel="Actions" Style="text-align: right;">
+                            <div class="d-inline-flex align-center gap-1">
+                                <MudTooltip Text="View Details">
+                                    <MudIconButton Icon="@Icons.Material.Rounded.Visibility" Size="Size.Small" Class="action-icon-btn action-view" OnClick="@(() => OpenDetailDialog(context))" />
+                                </MudTooltip>
+                                @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
+                                {
+                                    <MudTooltip Text="Edit">
+                                        <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Class="action-icon-btn action-edit" OnClick="@(() => OpenEditDialog(context))" />
                                     </MudTooltip>
-                                    @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
-                                    {
-                                        <MudTooltip Text="Edit">
-                                            <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenEditDialog(context))" />
-                                        </MudTooltip>
-                                    }
-                                    @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
-                                    {
-                                        <MudTooltip Text="Delete">
-                                            <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteItem(context))" />
-                                        </MudTooltip>
-                                    }
-                                </div>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudPaper>
+                                }
+                                @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
+                                {
+                                    <MudTooltip Text="Delete">
+                                        <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Class="action-icon-btn action-delete" OnClick="@(() => DeleteItem(context))" />
+                                    </MudTooltip>
+                                }
+                            </div>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
             }
             else
             {
-                <!-- Grid View -->
+                <!-- GRID CARD VIEW -->
                 <MudGrid Spacing="3">
                     @foreach (var item in _items)
                     {
-                        <MudItem xs="12" sm="6" md="4" lg="3" @key="item.Id">
-                            <MudCard Elevation="0" Class="rounded-xl border-solid border-1 h-100 d-flex flex-column" Style="border-color: var(--mud-palette-lines-default);">
-                                <MudCardContent Class="flex-grow-1">
-                                    <div class="d-flex justify-space-between align-center mb-3">
-                                        <MudAvatar Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Medium">
-                                            <MudIcon Icon="@Icons.Material.Rounded.{{ icon_name }}" Size="Size.Small" />
-                                        </MudAvatar>
-                                        <div class="d-flex gap-1">
-                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
-                                            {
-                                                <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenEditDialog(item))" />
-                                            }
-                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
-                                            {
-                                                <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteItem(item))" />
-                                            }
-                                        </div>
-                                    </div>
+                        var currentTheme = GetCardTheme(item.Id.ToString());
+                        <MudItem xs="12" sm="6" md="4" lg="3" @key="item.Id" Class="d-flex flex-column">
+                            <MudCard Elevation="0" Class="rounded-xl product-card flex-column d-flex h-100 flex-grow-1 border-solid border-1" Style="border-color: var(--mud-palette-lines-default);">
+                                <div class="product-card-banner" style="background: @currentTheme.gradient; height: 72px; display: flex; align-items: center; justify-content: center;">
+                                    <MudIcon Icon="@Icons.Material.Rounded.{{ icon_name }}" Size="Size.Medium" Style="color: white; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));" />
+                                </div>
+                                <MudCardContent Class="flex-grow-1 pa-3 pt-3 pb-2 d-flex flex-column">
 {{~ if (dto_properties | array.size) > 0 ~}}
-                                    <MudText Typo="Typo.h6" Class="font-weight-bold mb-1">@item.{{ dto_properties[0].name }}</MudText>
+                                    <MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-1 text-truncate" title="@item.{{ dto_properties[0].name }}">@item.{{ dto_properties[0].name }}</MudText>
 {{~ end ~}}
 {{~ for prop in dto_properties ~}}
     {{~ if !for.first ~}}
                                     <div class="d-flex justify-space-between mt-1">
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">{{ prop.name }}:</MudText>
-                                        <MudText Typo="Typo.caption" Class="font-weight-medium">@item.{{ prop.name }}</MudText>
+                                        <MudText Typo="Typo.caption" Class="font-weight-medium text-truncate" Style="max-width: 140px;">@item.{{ prop.name }}</MudText>
                                     </div>
     {{~ end ~}}
 {{~ end ~}}
+                                    <div class="product-card-footer d-flex align-center justify-space-between mt-auto pt-2 border-t border-solid" style="border-color: var(--mud-palette-lines-default) !important;">
+{{~ if use_base_entity ~}}
+                                        <span class="d-flex align-center gap-1">
+                                            <MudIcon Icon="@Icons.Material.Outlined.Event" Style="font-size: 0.72rem;" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@item.CreatedAt.ToString("MMM dd")</MudText>
+                                        </span>
+{{~ else ~}}
+                                        <span></span>
+{{~ end ~}}
+                                        <div class="d-flex align-center gap-1">
+                                            <MudTooltip Text="View Details">
+                                                <MudIconButton Icon="@Icons.Material.Rounded.ArrowForward" Size="Size.Small" Class="action-icon-btn action-view" OnClick="@(() => OpenDetailDialog(item))" />
+                                            </MudTooltip>
+                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Edit))
+                                            {
+                                                <MudTooltip Text="Edit">
+                                                    <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Class="action-icon-btn action-edit" OnClick="@(() => OpenEditDialog(item))" />
+                                                </MudTooltip>
+                                            }
+                                            @if (TokenProvider.HasPermission(Permissions.{{ entity_name_plural }}.Delete))
+                                            {
+                                                <MudTooltip Text="Delete">
+                                                    <MudIconButton Icon="@Icons.Material.Rounded.DeleteOutline" Size="Size.Small" Class="action-icon-btn action-delete" OnClick="@(() => DeleteItem(item))" />
+                                                </MudTooltip>
+                                            }
+                                        </div>
+                                    </div>
                                 </MudCardContent>
-                                <MudCardActions Class="pa-3 border-t-1" Style="border-color: var(--mud-palette-lines-default);">
-                                    <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Size="Size.Small" OnClick="@(() => OpenDetailDialog(item))">
-                                        View Details
-                                    </MudButton>
-                                </MudCardActions>
                             </MudCard>
                         </MudItem>
                     }
@@ -151,20 +198,25 @@
             }
 
             <!-- Pagination -->
-            @if (_totalPages > 1)
-            {
-                <div class="d-flex justify-center mt-6">
-                    <MudPagination Count="_totalPages" Selected="_currentPage" SelectedChanged="OnPageChanged"
-                                   Color="Color.Primary" Variant="Variant.Filled" Class="rounded-lg shadow-sm" />
-                </div>
-            }
+            <div class="d-flex justify-center mt-6 mb-2">
+                <MudPagination Color="Color.Primary" Count="@_totalPages" Selected="@_currentPage" SelectedChanged="OnPageChanged"
+                               ShowFirstButton="true" ShowLastButton="true" Variant="Variant.Filled" Class="rounded-xl shadow-sm" Size="Size.Small"/>
+            </div>
         </div>
     </Authorized>
     <NotAuthorized>
-        <div class="pa-8 text-center">
-            <MudText Typo="Typo.h6" Color="Color.Error">Access Denied</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">You do not have permission to view {{ entity_name_plural | string.downcase }}.</MudText>
-        </div>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-12 text-center">
+            <MudPaper Class="pa-8 rounded-2xl" Elevation="0" Style="border: 1px solid var(--mud-palette-lines-default);">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" Class="mb-3" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Sign In Required</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Please sign in to your account to view and manage {{ entity_name_plural | string.downcase }}.
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/login" Class="rounded-lg px-6">
+                    Sign In
+                </MudButton>
+            </MudPaper>
+        </MudContainer>
     </NotAuthorized>
 </AuthorizeView>
 
@@ -173,14 +225,33 @@
     private bool _isLoading = true;
     private string? _searchString;
     private int _currentPage = 1;
-    private int _pageSize = 10;
+    private int _pageSize = 8;
     private int _totalItems = 0;
     private int _totalPages = 1;
-    private bool _isTableView = true;
+    private bool _isTableView = false;
 
-    protected override async Task OnInitializedAsync()
+    private static readonly (string gradient, string iconColor)[] CardPalettes = new[]
     {
-        await LoadData();
+        ("linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", "#ffffff"),
+        ("linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", "#ffffff"),
+        ("linear-gradient(135deg, #059669 0%, #047857 100%)", "#ffffff"),
+        ("linear-gradient(135deg, #d97706 0%, #b45309 100%)", "#ffffff"),
+        ("linear-gradient(135deg, #db2777 0%, #9333ea 100%)", "#ffffff"),
+        ("linear-gradient(135deg, #475569 0%, #334155 100%)", "#ffffff")
+    };
+
+    private (string gradient, string iconColor) GetCardTheme(string id)
+    {
+        uint hash = (uint)(id?.GetHashCode() ?? 0);
+        return CardPalettes[hash % (uint)CardPalettes.Length];
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadData();
+        }
     }
 
     private async Task OnSearchChanged(string text)
@@ -206,8 +277,7 @@
         {
             _items = result.Data.Items.ToList();
             _totalItems = result.Data.TotalCount;
-            _totalPages = (int)Math.Ceiling((double)_totalItems / _pageSize);
-            if (_totalPages < 1) _totalPages = 1;
+            _totalPages = result.Data.TotalPages > 0 ? result.Data.TotalPages : 1;
         }
         else
         {
@@ -216,7 +286,7 @@
             _totalPages = 1;
             if (!string.IsNullOrEmpty(result.Error))
             {
-                Snackbar.Add(result.Error, Severity.Error);
+                Snackbar.Add($"Failed to load {{ entity_name_plural | string.downcase }}: {result.Error}", Severity.Error);
             }
         }
 
@@ -231,6 +301,7 @@
         var result = await dialog.Result;
         if (result is not null && !result.Canceled)
         {
+            _currentPage = 1;
             await LoadData();
         }
     }
@@ -266,7 +337,7 @@
         {
             { x => x.Title, "Delete {{ entity_name }}" },
             { x => x.Message, "Are you sure you want to permanently delete this {{ entity_name | string.downcase }}? All linked records will be affected." },
-            { x => x.ItemName, item.Id.ToString() },
+            { x => x.ItemName, item.{{ if (dto_properties | array.size) > 0 }}{{ dto_properties[0].name }}{{ else }}Id.ToString(){{ end }} },
             { x => x.ConfirmText, "Delete {{ entity_name }}" },
             { x => x.ConfirmColor, Color.Error }
         };
@@ -286,7 +357,7 @@
             }
             else
             {
-                Snackbar.Add($"Failed to delete: {result.Error}", Severity.Error);
+                Snackbar.Add($"Failed to delete {{ entity_name | string.downcase }}: {result.Error}", Severity.Error);
             }
         }
     }

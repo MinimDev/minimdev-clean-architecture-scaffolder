@@ -1,0 +1,5 @@
+<Project>
+    <!-- Prevent missing unused platform workloads (such as maui-tizen) from failing Windows builds -->
+    <Target Name="_CheckForMissingWorkload" />
+</Project>
+

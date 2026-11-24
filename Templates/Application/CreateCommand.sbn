@@ -2,7 +2,7 @@
 using {{ root_namespace }}.Domain.Enums;
 {{~ end ~}}
 using {{ root_namespace }}.Application.Common.Models;
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Create{{ entity_name }};
 
@@ -12,7 +12,6 @@ namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Com
 public record Create{{ entity_name }}Command : IRequest<Result<Guid>>
 {
 {{~ for prop in dto_properties ~}}
-    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" && !prop.is_nullable }} = string.Empty;{{ end }}
 {{~ end ~}}
 }
-

@@ -57,7 +57,10 @@ public class PropertyModel
 
     public string ActualForeignKeyName => string.IsNullOrWhiteSpace(ForeignKeyName) ? Name + "Id" : ForeignKeyName;
 
-    public bool IsAuditableProperty => Name is "IsDeleted" or "DeletedAt" or "DeletedBy" or "Created" or "CreatedBy" or "LastModified" or "LastModifiedBy";
+    public bool IsAuditableProperty => Name is "IsDeleted" or "DeletedAt" or "DeletedBy" 
+        or "CreatedAt" or "Created" or "CreatedAtUtc" or "CreatedBy" 
+        or "ModifiedAt" or "Modified" or "ModifiedAtUtc" or "LastModified" or "LastModifiedAtUtc" 
+        or "ModifiedBy" or "LastModifiedBy";
 
     public string NameCamelCase => string.IsNullOrWhiteSpace(Name)
         ? string.Empty

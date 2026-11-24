@@ -1,6 +1,9 @@
 using {{ root_namespace }}.Application.Common.Models;
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Delete{{ entity_name }};
 
-public record Delete{{ entity_name }}Command(Guid Id) : IRequest<Result<Unit>>;
+/// <summary>
+///     Command untuk menghapus {{ entity_name | string.downcase }}
+/// </summary>
+public record Delete{{ entity_name }}Command(Guid Id) : IRequest<Result>;

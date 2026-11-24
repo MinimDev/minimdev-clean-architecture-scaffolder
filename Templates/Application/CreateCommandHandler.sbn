@@ -5,7 +5,7 @@ using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Domain.Entities;
 using {{ root_namespace }}.Domain.Exceptions;
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Create{{ entity_name }};
 
@@ -21,7 +21,7 @@ public class Create{{ entity_name }}CommandHandler : IRequestHandler<Create{{ en
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<Guid>> Handle(Create{{ entity_name }}Command request, CancellationToken cancellationToken)
+    public async ValueTask<Result<Guid>> Handle(Create{{ entity_name }}Command request, CancellationToken cancellationToken)
     {
         try
         {
@@ -50,5 +50,3 @@ public class Create{{ entity_name }}CommandHandler : IRequestHandler<Create{{ en
         }
     }
 }
-
-

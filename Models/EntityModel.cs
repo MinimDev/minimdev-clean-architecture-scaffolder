@@ -103,14 +103,14 @@ public class EntityModel
 
     public void AddAuditFields()
     {
-        if (!Properties.Any(p => p.Name.Equals("CreatedAtUtc", StringComparison.OrdinalIgnoreCase)))
-            Properties.Add(new PropertyModel { Name = "CreatedAtUtc", DataType = "DateTime", IsNullable = false });
+        if (!Properties.Any(p => p.Name.Equals("CreatedAt", StringComparison.OrdinalIgnoreCase) || p.Name.Equals("CreatedAtUtc", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "CreatedAt", DataType = "DateTime", IsNullable = false });
         if (!Properties.Any(p => p.Name.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase)))
             Properties.Add(new PropertyModel { Name = "CreatedBy", DataType = "string", IsNullable = true, MaxLength = 100 });
-        if (!Properties.Any(p => p.Name.Equals("LastModifiedAtUtc", StringComparison.OrdinalIgnoreCase)))
-            Properties.Add(new PropertyModel { Name = "LastModifiedAtUtc", DataType = "DateTime", IsNullable = true });
-        if (!Properties.Any(p => p.Name.Equals("LastModifiedBy", StringComparison.OrdinalIgnoreCase)))
-            Properties.Add(new PropertyModel { Name = "LastModifiedBy", DataType = "string", IsNullable = true, MaxLength = 100 });
+        if (!Properties.Any(p => p.Name.Equals("ModifiedAt", StringComparison.OrdinalIgnoreCase) || p.Name.Equals("LastModifiedAtUtc", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "ModifiedAt", DataType = "DateTime", IsNullable = true });
+        if (!Properties.Any(p => p.Name.Equals("ModifiedBy", StringComparison.OrdinalIgnoreCase) || p.Name.Equals("LastModifiedBy", StringComparison.OrdinalIgnoreCase)))
+            Properties.Add(new PropertyModel { Name = "ModifiedBy", DataType = "string", IsNullable = true, MaxLength = 100 });
     }
 
     public void AddMasterFields()

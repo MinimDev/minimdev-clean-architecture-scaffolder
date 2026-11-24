@@ -2,16 +2,16 @@
 using {{ root_namespace }}.Domain.Enums;
 {{~ end ~}}
 using {{ root_namespace }}.Application.Common.Models;
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Update{{ entity_name }};
 
-public record Update{{ entity_name }}Command({{ if use_base_entity }}Guid Id{{ end }}) : IRequest<Result<Unit>>
+/// <summary>
+///     Command untuk update {{ entity_name | string.downcase }} by Id
+/// </summary>
+public record Update{{ entity_name }}Command({{ if use_base_entity }}Guid Id{{ end }}) : IRequest<Result>
 {
 {{~ for prop in dto_properties ~}}
-    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; init; }{{ if prop.data_type == "string" && !prop.is_nullable }} = string.Empty;{{ end }}
 {{~ end ~}}
 }
-
-
-

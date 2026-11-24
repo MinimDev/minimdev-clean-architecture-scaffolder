@@ -1,5 +1,5 @@
 using {{ root_namespace }}.Application.Common.Models;
-using MediatR;
+using Mediator;
 {{~ if has_custom_types ~}}
 using {{ root_namespace }}.Domain.Enums;
 {{~ end ~}}
@@ -7,12 +7,13 @@ using {{ root_namespace }}.Domain.Enums;
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
 
 /// <summary>
-///     Query untuk mendapatkan list {{ entity_name_plural | string.downcase }}
+///     Query untuk mendapatkan list {{ entity_name_plural | string.downcase }} dengan pagination
 /// </summary>
 public record GetAll{{ entity_name_plural }}Query : IRequest<Result<PaginatedList<{{ entity_name }}Dto>>>
 {
-    public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
+    public int PageNumber { get; init; } = 1;
+    public int PageSize { get; init; } = 10;
+    public string? SearchTerm { get; init; }
 }
 
 /// <summary>
@@ -24,6 +25,9 @@ public class {{ entity_name }}Dto
     public Guid Id { get; set; }
 {{~ end ~}}
 {{~ for prop in dto_properties ~}}
-    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; set; }{{ if prop.data_type == "string" }} = string.Empty;{{ end }}
+    public {{ prop.data_type }}{{ if prop.is_nullable }}?{{ end }} {{ prop.name }} { get; set; }{{ if prop.data_type == "string" && !prop.is_nullable }} = string.Empty;{{ end }}
+{{~ end ~}}
+{{~ if use_base_entity ~}}
+    public DateTime CreatedAt { get; set; }
 {{~ end ~}}
 }

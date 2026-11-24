@@ -4,42 +4,44 @@ using {{ root_namespace }}.Domain.Enums;
 using {{ root_namespace }}.Application.Common.Interfaces;
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
-using {{ root_namespace }}.Domain.Entities;
-using {{ root_namespace }}.Domain.Errors;
-using MediatR;
+using Mapster;
+using Mediator;
+using Microsoft.EntityFrameworkCore;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.Get{{ entity_name }}ById;
 
+/// <summary>
+/// Handler untuk Get{{ entity_name }}ByIdQuery
+/// </summary>
 public class Get{{ entity_name }}ByIdQueryHandler : IRequestHandler<Get{{ entity_name }}ByIdQuery, Result<{{ entity_name }}Dto>>
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IApplicationDbContext _context;
 
-    public Get{{ entity_name }}ByIdQueryHandler(IUnitOfWork unitOfWork)
+    public Get{{ entity_name }}ByIdQueryHandler(IApplicationDbContext context)
     {
-        _unitOfWork = unitOfWork;
+        _context = context;
     }
 
-    public async Task<Result<{{ entity_name }}Dto>> Handle(Get{{ entity_name }}ByIdQuery request, CancellationToken cancellationToken)
+    public async ValueTask<Result<{{ entity_name }}Dto>> Handle(Get{{ entity_name }}ByIdQuery request, CancellationToken cancellationToken)
     {
-        var {{ entity_name_camel }} = await _unitOfWork.Repository<{{ entity_name }}>().GetByIdAsync(request.Id);
-        
-        if ({{ entity_name_camel }} == null)
-            return Result<{{ entity_name }}Dto>.Failure({{ entity_name }}Errors.NotFound);
-
-        var dto = new {{ entity_name }}Dto
+        try
         {
-{{~ if use_base_entity ~}}
-            Id = {{ entity_name_camel }}.Id,
-{{~ end ~}}
-{{~ for prop in entity_properties ~}}
-            {{ prop.name }} = {{ entity_name_camel }}.{{ prop.name }}{{ if !for.last || (collection_fk_properties | array.size) > 0 }},{{ end }}
-{{~ end ~}}
-{{~ if (collection_fk_properties | array.size) > 0 ~}}
-            // TODO: Map collection FK properties
-            // {{ for prop in collection_fk_properties }}{{ prop.name }} = {{ entity_name_camel }}.[CollectionProperty].Select(x => x.Id).ToList(){{ if !for.last }},{{ end }}{{ end }}
-{{~ end ~}}
-        };
+            var item = await _context.{{ entity_name_plural }}
+                .AsNoTracking()
+                .Where(p => p.Id == request.Id)
+                .ProjectToType<{{ entity_name }}Dto>()
+                .FirstOrDefaultAsync(cancellationToken);
 
-        return Result<{{ entity_name }}Dto>.Success(dto);
+            if (item == null)
+            {
+                return Result<{{ entity_name }}Dto>.Failure($"{{ entity_name }} with ID {request.Id} not found");
+            }
+
+            return Result<{{ entity_name }}Dto>.Success(item);
+        }
+        catch (Exception ex)
+        {
+            return Result<{{ entity_name }}Dto>.Failure($"An error occurred while retrieving the {{ entity_name | string.downcase }}: {ex.Message}");
+        }
     }
 }

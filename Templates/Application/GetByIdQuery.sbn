@@ -1,7 +1,10 @@
 using {{ root_namespace }}.Application.Common.Models;
 using {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.GetAll{{ entity_name_plural }};
-using MediatR;
+using Mediator;
 
 namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Queries.Get{{ entity_name }}ById;
 
+/// <summary>
+///     Query untuk mendapatkan {{ entity_name | string.downcase }} by ID
+/// </summary>
 public record Get{{ entity_name }}ByIdQuery(Guid Id) : IRequest<Result<{{ entity_name }}Dto>>;

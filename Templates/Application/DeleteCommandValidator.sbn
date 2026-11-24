@@ -1,0 +1,16 @@
+using FluentValidation;
+
+namespace {{ root_namespace }}.Application.Features.{{ entity_name_plural }}.Commands.Delete{{ entity_name }};
+
+/// <summary>
+/// Validator untuk Delete{{ entity_name }}Command
+/// </summary>
+public class Delete{{ entity_name }}CommandValidator : AbstractValidator<Delete{{ entity_name }}Command>
+{
+    public Delete{{ entity_name }}CommandValidator()
+    {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("{{ entity_name }} id is required");
+    }
+}
+

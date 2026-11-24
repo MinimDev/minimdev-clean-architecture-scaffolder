@@ -3,6 +3,7 @@
     <PropertyGroup>
         <!-- Windows-only: MAUI Blazor Hybrid Desktop App -->
         <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <MauiVersion Condition="'$(MauiVersion)' == ''">10.0.20</MauiVersion>
 
         <OutputType>Exe</OutputType>
         <RootNamespace>ArchStudio</RootNamespace>

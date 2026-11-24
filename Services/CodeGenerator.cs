@@ -140,6 +140,8 @@ public class CodeGenerator
         {
             list.Add(("Application/DeleteCommand.sbn",
                 $"src/Core/{ns}.Application/Features/{pl}/Commands/Delete{n}/Delete{n}Command.cs"));
+            list.Add(("Application/DeleteCommandValidator.sbn",
+                $"src/Core/{ns}.Application/Features/{pl}/Commands/Delete{n}/Delete{n}CommandValidator.cs"));
             list.Add(("Application/DeleteCommandHandler.sbn",
                 $"src/Core/{ns}.Application/Features/{pl}/Commands/Delete{n}/Delete{n}CommandHandler.cs"));
         }
@@ -323,6 +325,29 @@ public class CodeGenerator
                 }
 
                 string newSource = source.Insert(insertPos, block);
+
+                int getAllIdx = newSource.IndexOf("GetAll()");
+                if (getAllIdx >= 0)
+                {
+                    int closingSemicolon = newSource.IndexOf("};", getAllIdx);
+                    if (closingSemicolon >= 0 && !newSource.Substring(getAllIdx, closingSemicolon - getAllIdx).Contains($"{pl}.View"))
+                    {
+                        string listEntries = $"            {pl}.View,\n            {pl}.Create,\n            {pl}.Edit,\n            {pl}.Delete,\n";
+                        newSource = newSource.Insert(closingSemicolon, listEntries);
+                    }
+                }
+
+                int getGroupedIdx = newSource.IndexOf("GetGrouped()");
+                if (getGroupedIdx >= 0)
+                {
+                    int closingSemicolon = newSource.IndexOf("};", getGroupedIdx);
+                    if (closingSemicolon >= 0 && !newSource.Substring(getGroupedIdx, closingSemicolon - getGroupedIdx).Contains($"[\"{pl}\"]"))
+                    {
+                        string dictEntry = $"            [\"{pl}\"] = new() {{ {pl}.View, {pl}.Create, {pl}.Edit, {pl}.Delete }},\n";
+                        newSource = newSource.Insert(closingSemicolon, dictEntry);
+                    }
+                }
+
                 await File.WriteAllTextAsync(fullPath, newSource);
                 anyModified = true;
             }
