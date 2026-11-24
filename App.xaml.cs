@@ -1,4 +1,4 @@
-﻿namespace ArchStudio;
+namespace ArchStudio;
 
 public partial class App : Application
 {
@@ -12,3 +12,4 @@ public partial class App : Application
 		return new Window(new MainPage()) { Title = "MinimDev Arch Studio" };
 	}
 }
+

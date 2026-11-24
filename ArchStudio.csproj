@@ -13,7 +13,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
-        <MauiXamlInflator>SourceGen</MauiXamlInflator>
 
         <DefaultItemExcludes>$(DefaultItemExcludes);AppTarget\**</DefaultItemExcludes>
 
@@ -23,6 +22,10 @@
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
         <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSdkBootstrapInitialize>true</WindowsAppSdkBootstrapInitialize>
+        <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+        <ApplicationManifest>Platforms\Windows\app.manifest</ApplicationManifest>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>

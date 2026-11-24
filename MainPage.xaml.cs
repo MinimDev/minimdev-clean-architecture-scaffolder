@@ -1,4 +1,4 @@
-﻿namespace ArchStudio;
+namespace ArchStudio;
 
 public partial class MainPage : ContentPage
 {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
   <assemblyIdentity version="1.0.0.0" name="ArchStudio.WinUI.app"/>
 
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
@@ -14,4 +14,27 @@
       <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
     </windowsSettings>
   </application>
+
+  <asmv3:file name="Microsoft.Web.WebView2.Core.dll">
+    <activatableClass 
+        name="Microsoft.Web.WebView2.Core.CoreWebView2Environment" 
+        threadingModel="both" 
+        xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass 
+        name="Microsoft.Web.WebView2.Core.CoreWebView2Controller" 
+        threadingModel="both" 
+        xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass 
+        name="Microsoft.Web.WebView2.Core.CoreWebView2ControllerWindowReference" 
+        threadingModel="both" 
+        xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass 
+        name="Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions" 
+        threadingModel="both" 
+        xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass 
+        name="Microsoft.Web.WebView2.Core.CoreWebView2CustomSchemeRegistration" 
+        threadingModel="both" 
+        xmlns="urn:schemas-microsoft-com:winrt.v1" />
+  </asmv3:file>
 </assembly>
